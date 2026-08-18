@@ -223,17 +223,25 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
             },
             topBar = {
                 if (uiState.currentTab == "inventory") {
-                    Column {
-                        if (uiState.isSelectionMode) {
-                            // Selection Action Bar
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(58.dp)
-                                    .testTag("selection_toolbar"),
-                                color = Color.White,
-                                shadowElevation = 4.dp
-                            ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .statusBarsPadding()
+                        ) {
+                            if (uiState.isSelectionMode) {
+                                // Selection Action Bar
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(58.dp)
+                                        .testTag("selection_toolbar"),
+                                    color = Color.White
+                                ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -328,56 +336,6 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
                             )
                         }
 
-                        // Broadcast Animated Announcement Bar
-                        AnimatedVisibility(
-                            visible = !uiState.broadcastMessage.isNullOrBlank(),
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            uiState.broadcastMessage?.let { rawMsg ->
-                                val msg = rawMsg.replace("@user", uiState.userName.ifBlank { "Valued Customer" })
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = WayStockPrimary
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 7.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.NotificationsActive,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = msg,
-                                            fontSize = 12.5.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color.White,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        IconButton(
-                                            onClick = { viewModel.sendBroadcastNotification("") },
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Close,
-                                                contentDescription = "Dismiss",
-                                                tint = Color.White.copy(alpha = 0.85f),
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         BreadcrumbBar(
                             pathStack = uiState.pathStack,
                             onBreadcrumbClick = { index -> viewModel.jumpToBreadcrumb(index) }
@@ -385,6 +343,7 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
                     }
                 }
             }
+        }
         ) { innerPadding ->
             Box(
                 modifier = Modifier
@@ -432,39 +391,40 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
-                                    Text("📦✨", fontSize = 50.sp)
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.FolderOpen,
+                                        contentDescription = null,
+                                        tint = WayStockTextSec,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     Text(
-                                        text = "Oho! Maal-Gadi Khali Hai",
-                                        fontSize = 18.sp,
+                                        text = "No Items Here",
+                                        fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = WayStockDark
                                     )
                                     Text(
-                                        text = "Lagta hai abhi tak koi stock nahi aaya. Chalo, kuch naya bharte hain!",
+                                        text = "This folder is currently empty. Add items or categories using Admin.",
                                         fontSize = 13.sp,
                                         color = WayStockTextSec,
                                         textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
+                                        modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                                     )
 
-                                    Button(
-                                        onClick = {
-                                            if (uiState.isAdminMode) {
-                                                viewModel.setAddModalOpen(true)
-                                            } else {
-                                                viewModel.setCartOpen(true)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
-                                    ) {
-                                        Text(
-                                            text = if (uiState.isAdminMode) "Maal Bharo! 🚀" else "Bucket Dekho! 🛒",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
+                                    if (uiState.isAdminMode) {
+                                        Button(
+                                            onClick = { viewModel.setAddModalOpen(true) },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
+                                        ) {
+                                            Text(
+                                                text = "+ Add Items",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        }
                                     }
                                 }
                             } else {

@@ -105,7 +105,7 @@ fun AddCustomItemDialog(
                             color = WayStockDark
                         )
                         Text(
-                            text = "Bucket me temporary item jodein",
+                            text = "Add a temporary item to your bucket",
                             fontSize = 12.sp,
                             color = WayStockTextSec
                         )

@@ -90,7 +90,7 @@ fun UserOnboardingDialog(
                 )
 
                 Text(
-                    text = "Apna naam daal kar apni personal bucket chalu karein!",
+                    text = "Enter your name to get started",
                     fontSize = 13.sp,
                     color = WayStockTextSec,
                     textAlign = TextAlign.Center,

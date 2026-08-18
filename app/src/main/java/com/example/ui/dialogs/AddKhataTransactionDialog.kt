@@ -48,7 +48,7 @@ fun AddKhataTransactionDialog(
     var paymentMode by remember {
         mutableStateOf(
             if (initialType == "GAVE") {
-                if (customer.balance < 0) "Advance / Wallet Deduct" else "Credit / Udhar"
+                if (customer.balance < 0) "Advance / Wallet Deduct" else "Credit"
             } else "Cash"
         )
     }
@@ -113,7 +113,7 @@ fun AddKhataTransactionDialog(
                 ) {
                     Column {
                         Text(
-                            text = if (type == "GAVE") "⚡ Fast Udhar Diya (You Gave)" else "💰 Advance / Jama Mila (You Got)",
+                            text = if (type == "GAVE") "⚡ Give Credit (-)" else "💰 Receive Payment (+)",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = if (type == "GAVE") Color(0xFFDC2626) else Color(0xFF16A34A)
@@ -162,7 +162,7 @@ fun AddKhataTransactionDialog(
                                 if (customer.balance < 0) {
                                     paymentMode = "Advance / Wallet Deduct"
                                 } else {
-                                    paymentMode = "Credit / Udhar"
+                                    paymentMode = "Credit"
                                 }
                             },
                         color = if (type == "GAVE") Color(0xFFDC2626) else Color(0xFFDC2626).copy(alpha = 0.08f),
@@ -173,13 +173,13 @@ fun AddKhataTransactionDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "🔴 Aapne Maal/Udhar Diya",
+                                text = "🔴 Gave Credit (-)",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (type == "GAVE") Color.White else Color(0xFFDC2626)
                             )
                             Text(
-                                text = if (customer.balance < 0) "Deduct from Advance" else "+ Add to Udhar",
+                                text = if (customer.balance < 0) "Deduct from Advance" else "+ Add to Due",
                                 fontSize = 10.sp,
                                 color = if (type == "GAVE") Color.White.copy(alpha = 0.85f) else Color(0xFFDC2626).copy(alpha = 0.8f)
                             )
@@ -192,7 +192,7 @@ fun AddKhataTransactionDialog(
                             .weight(1f)
                             .clickable {
                                 type = "GOT"
-                                if (paymentMode == "Credit / Udhar" || paymentMode == "Advance / Wallet Deduct") paymentMode = "Cash"
+                                if (paymentMode == "Credit" || paymentMode == "Advance / Wallet Deduct") paymentMode = "Cash"
                             },
                         color = if (type == "GOT") Color(0xFF16A34A) else Color(0xFF16A34A).copy(alpha = 0.08f),
                         shape = RoundedCornerShape(12.dp)
@@ -202,13 +202,13 @@ fun AddKhataTransactionDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "🟢 Aapko Jama/Advance Mila",
+                                text = "🟢 Received Payment (+)",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (type == "GOT") Color.White else Color(0xFF16A34A)
                             )
                             Text(
-                                text = "Deposit / Payment Clear",
+                                text = "Deposit / Settle Due",
                                 fontSize = 10.sp,
                                 color = if (type == "GOT") Color.White.copy(alpha = 0.85f) else Color(0xFF16A34A).copy(alpha = 0.8f)
                             )
@@ -388,8 +388,8 @@ fun AddKhataTransactionDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Details / Item Vivaran") },
-                    placeholder = { Text("e.g. 2 Packs Cigarettes, Cold drink, Advance for next week") },
+                    label = { Text("Details / Note") },
+                    placeholder = { Text("e.g. 2 Packs, Soft drinks, Advance") },
                     leadingIcon = { Icon(Icons.Default.Description, contentDescription = null, tint = WayStockPrimary) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
@@ -405,7 +405,7 @@ fun AddKhataTransactionDialog(
 
                 // Payment Mode options
                 Text(
-                    text = "Account / Payment Mode",
+                    text = "Payment Mode",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = WayStockDark
@@ -417,8 +417,8 @@ fun AddKhataTransactionDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     val modes = if (type == "GAVE") {
-                        if (customer.balance < 0) listOf("Advance / Wallet Deduct", "Credit / Udhar", "Cash")
-                        else listOf("Credit / Udhar", "Cash", "Online")
+                        if (customer.balance < 0) listOf("Advance / Wallet Deduct", "Credit", "Cash")
+                        else listOf("Credit", "Cash", "Online")
                     } else {
                         listOf("Cash", "UPI / Online", "Advance Deposit")
                     }
@@ -455,7 +455,7 @@ fun AddKhataTransactionDialog(
                     OutlinedTextField(
                         value = billNumber,
                         onValueChange = { billNumber = it },
-                        label = { Text("Bill / Token No.") },
+                        label = { Text("Token / Invoice #") },
                         placeholder = { Text("e.g. #104") },
                         leadingIcon = { Icon(Icons.Default.Receipt, contentDescription = null, tint = WayStockPrimary, modifier = Modifier.size(18.dp)) },
                         modifier = Modifier.weight(1f),
@@ -499,15 +499,15 @@ fun AddKhataTransactionDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "New Balance Preview:",
+                                text = "New Balance:",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WayStockDark
                             )
                             Text(
-                                text = if (simulatedNewBalance > 0) "₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(simulatedNewBalance)} (Udhar Lene Baaki)"
-                                else if (simulatedNewBalance < 0) "₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(simulatedNewBalance))} (Advance Remaining)"
-                                else "₹0 (Fully Settled)",
+                                text = if (simulatedNewBalance > 0) "-₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(simulatedNewBalance)} (Due)"
+                                else if (simulatedNewBalance < 0) "+₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(simulatedNewBalance))} (Advance)"
+                                else "₹0 (Settled)",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = if (simulatedNewBalance > 0) Color(0xFFDC2626) else if (simulatedNewBalance < 0) Color(0xFF16A34A) else WayStockTextSec,
@@ -552,7 +552,7 @@ fun AddKhataTransactionDialog(
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (type == "GAVE") "Record Udhar" else "Save Jama",
+                            text = if (type == "GAVE") "Record Credit (-)" else "Save Payment (+)",
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )

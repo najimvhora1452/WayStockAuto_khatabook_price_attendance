@@ -130,7 +130,7 @@ fun MasterGlobalControlDialog(
                             fontSize = 14.sp
                         )
                         Text(
-                            "Aap yahan se decide kar sakte hain ki kaunse features sabhi Premium admins ko by default dikhenge aur kaunse sirf aapke paas rahenge.",
+                            "Configure global feature access and visibility permissions for Premium administrators.",
                             color = Color(0xFF94A3B8),
                             fontSize = 11.sp,
                             lineHeight = 15.sp,
@@ -160,7 +160,7 @@ fun MasterGlobalControlDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Sell,
                         title = "🏷️ Price Tracker Global Broadcast",
-                        description = if (isPriceGlobal) "ON: Sabhi Google Logged-in Premium Users ko Price Page dikhega." else "OFF: Price Page SIRF AAPKE LIYE dikhega (Super Exclusive).",
+                        description = if (isPriceGlobal) "ON: All signed-in Premium users can access the Price Page." else "OFF: Visible only to Super Admin.",
                         isChecked = isPriceGlobal,
                         accentColor = Color(0xFFEA580C),
                         onCheckedChange = { isPriceGlobal = it }
@@ -169,7 +169,7 @@ fun MasterGlobalControlDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.MenuBook,
                         title = "💳 Khata Book Access to All Premium",
-                        description = if (isKhataGlobal) "ON: Sabhi Premium users customer khata dekh sakte hain." else "OFF: Sirf selected admins jinhe manually allow kiya ho.",
+                        description = if (isKhataGlobal) "ON: All Premium users can view customer Khata." else "OFF: Restricted to authorized admins only.",
                         isChecked = isKhataGlobal,
                         accentColor = Color(0xFF0284C7),
                         onCheckedChange = { isKhataGlobal = it }
@@ -178,7 +178,7 @@ fun MasterGlobalControlDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Groups,
                         title = "👥 Staff & Attendance to All Premium",
-                        description = if (isStaffGlobal) "ON: Sabhi Premium users staff attendance mark kar sakte hain." else "OFF: Staff management restricted to Super Admin.",
+                        description = if (isStaffGlobal) "ON: All Premium users can manage staff attendance." else "OFF: Staff management restricted to Super Admin.",
                         isChecked = isStaffGlobal,
                         accentColor = Color(0xFF059669),
                         onCheckedChange = { isStaffGlobal = it }
@@ -187,7 +187,7 @@ fun MasterGlobalControlDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Inventory2,
                         title = "📦 Stock Edit / Delete to All Premium",
-                        description = if (isInvGlobal) "ON: Premium Admins stock edit aur new folders add kar sakte hain." else "OFF: View only for others.",
+                        description = if (isInvGlobal) "ON: Premium Admins can edit stock and add categories." else "OFF: View only for others.",
                         isChecked = isInvGlobal,
                         accentColor = WayStockPrimary,
                         onCheckedChange = { isInvGlobal = it }

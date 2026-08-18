@@ -143,9 +143,9 @@ fun KhataBookScreen(
                     if (cust.phone.isNotBlank()) {
                         val cleanPhone = cust.phone.replace(" ", "").replace("-", "")
                         val message = if (cust.balance > 0) {
-                            "Namaste ${cust.name} ji, aapke WayStock account me ₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(cust.balance))} ka hisab (Udhar) baaki he. Kripya payment clear karein. Dhanyawad!"
+                            "Hello ${cust.name}, this is a reminder from WayStock regarding your outstanding balance of ₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(cust.balance))}. Please clear the balance at your earliest convenience. Thank you!"
                         } else {
-                            "Namaste ${cust.name} ji, aapka advance balance ₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(cust.balance))} WayStock khata me available he. Dhanyawad!"
+                            "Hello ${cust.name}, your advance balance on WayStock is ₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(cust.balance))}. Thank you!"
                         }
                         try {
                             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -170,12 +170,13 @@ fun KhataBookScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
-                    shadowElevation = 3.dp
+                    shadowElevation = 2.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .statusBarsPadding()
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -184,14 +185,14 @@ fun KhataBookScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "📒 Khata & Udhar Ledger",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    text = "Ledger Accounts",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = WayStockDark
                                 )
                                 Text(
-                                    text = "Frequent Retail Udhar & Advance Accounts",
-                                    fontSize = 11.5.sp,
+                                    text = "Customer & Supplier Balance Tracker",
+                                    fontSize = 11.sp,
                                     color = WayStockTextSec
                                 )
                             }
@@ -199,182 +200,91 @@ fun KhataBookScreen(
                             Button(
                                 onClick = { viewModel.openAddKhataCustomer() },
                                 colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                modifier = Modifier.testTag("add_customer_btn")
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.height(34.dp).testTag("add_customer_btn")
                             ) {
-                                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Add Customer", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Add Account", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Permanent Sticky Notification Quick Entry Toggle Card
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp)),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (uiState.isKhataStickyNotificationEnabled) Color(0xFFF0FDF4) else Color(0xFFF8FAFC),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (uiState.isKhataStickyNotificationEnabled) Color(0xFF86EFAC) else Color(0xFFE2E8F0)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = if (uiState.isKhataStickyNotificationEnabled) Color(0xFFDCFCE7) else Color(0xFFE2E8F0),
-                                        modifier = Modifier.size(34.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(if (uiState.isKhataStickyNotificationEnabled) "🔔" else "🔕", fontSize = 16.sp)
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = "Permanent Sticky Khata Bar",
-                                                fontSize = 12.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = WayStockDark
-                                            )
-                                            if (uiState.isKhataStickyNotificationEnabled) {
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Surface(
-                                                    color = Color(0xFF16A34A),
-                                                    shape = RoundedCornerShape(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "ACTIVE",
-                                                        fontSize = 8.5.sp,
-                                                        fontWeight = FontWeight.Black,
-                                                        color = Color.White,
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Text(
-                                            text = "Search customer & make 1-tap entries right from phone notification shade",
-                                            fontSize = 10.sp,
-                                            color = WayStockTextSec,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-
-                                Switch(
-                                    checked = uiState.isKhataStickyNotificationEnabled,
-                                    onCheckedChange = { enabled ->
-                                        viewModel.toggleKhataStickyNotification(enabled)
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = Color(0xFF16A34A)
-                                    ),
-                                    modifier = Modifier.testTag("sticky_khata_switch")
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Summary Cards: Udhar Lene Baaki vs Advance Deposits / Dene Baaki
+                        // Summary Cards: Total Due (-) vs Advance Deposit (+)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // You will get (Red / Udhar Lene Baaki)
+                            // Total Due (-)
                             Card(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .shadow(2.dp, RoundedCornerShape(12.dp)),
-                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFEE2E2))
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp)
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Icon(Icons.Default.ArrowDownward, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
                                         Text(
-                                            text = "Udhar Lene Baaki",
-                                            fontSize = 11.sp,
+                                            text = "Total Due (-)",
+                                            fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF991B1B)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(totalLeneBaaki)}",
-                                        fontSize = 17.sp,
+                                        text = "-₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(totalLeneBaaki)}",
+                                        fontSize = 15.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFFB91C1C),
                                         fontFamily = FontFamily.Monospace
                                     )
                                     Text(
-                                        text = "$dueCustomersCount parties due",
+                                        text = "$dueCustomersCount due",
                                         fontSize = 9.5.sp,
                                         color = Color(0xFF991B1B)
                                     )
                                 }
                             }
 
-                            // Advance / You will give (Green / Advance Jama Deposit)
+                            // Advance Deposit (+)
                             Card(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .shadow(2.dp, RoundedCornerShape(12.dp)),
-                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFFDCFCE7))
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp)
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
                                         Text(
-                                            text = "Advance Deposit",
-                                            fontSize = 11.sp,
+                                            text = "Advance Deposit (+)",
+                                            fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF166534)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(totalDeneBaaki)}",
-                                        fontSize = 17.sp,
+                                        text = "+₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(totalDeneBaaki)}",
+                                        fontSize = 15.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFF15803D),
                                         fontFamily = FontFamily.Monospace
                                     )
                                     Text(
-                                        text = "$advanceCustomersCount prepaid accounts",
+                                        text = "$advanceCustomersCount prepaid",
                                         fontSize = 9.5.sp,
                                         color = Color(0xFF166534)
                                     )
@@ -382,46 +292,46 @@ fun KhataBookScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         // Search Bar
                         OutlinedTextField(
                             value = uiState.khataSearchQuery,
                             onValueChange = { viewModel.setKhataSearchQuery(it) },
-                            placeholder = { Text("Search customer by name, mobile number...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WayStockPrimary) },
+                            placeholder = { Text("Search by name, phone or address...", fontSize = 12.5.sp, color = WayStockTextSec) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(18.dp)) },
                             trailingIcon = {
                                 if (uiState.khataSearchQuery.isNotBlank()) {
                                     IconButton(onClick = { viewModel.setKhataSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear", tint = WayStockTextSec)
+                                        Icon(Icons.Default.Close, contentDescription = "Clear", tint = WayStockTextSec, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
+                                .height(42.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = WayStockPrimary,
                                 unfocusedBorderColor = WayStockBorder,
-                                focusedContainerColor = WayStockBg,
-                                unfocusedContainerColor = WayStockBg
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedContainerColor = Color(0xFFF8FAFC)
                             ),
                             singleLine = true
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Filter Chips (All, Advance Accounts, Unpaid Udhar, Suppliers)
+                        // Filter Chips
                         LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val filterOptions = listOf(
                                 "ALL" to "All (${allCustomers.size})",
-                                "ADVANCE" to "💰 Advance Wallet ($advanceCustomersCount)",
-                                "PENDING" to "🔴 Unpaid Udhar ($dueCustomersCount)",
-                                "CUSTOMERS" to "Regular Customers",
+                                "PENDING" to "Due (-$dueCustomersCount)",
+                                "ADVANCE" to "Advance (+$advanceCustomersCount)",
+                                "CUSTOMERS" to "Customers",
                                 "SUPPLIERS" to "Suppliers"
                             )
                             items(filterOptions) { (typeKey, label) ->
@@ -450,17 +360,17 @@ fun KhataBookScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.MenuBook, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(54.dp))
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Icon(Icons.Default.MenuBook, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = if (uiState.khataSearchQuery.isNotBlank()) "No matching customer found" else "No Customer Khata added yet",
-                                fontSize = 16.sp,
+                                text = if (uiState.khataSearchQuery.isNotBlank()) "No matching accounts found" else "No Ledger Accounts Added",
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WayStockDark
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap 'Add Customer' to start fast udhar & advance daily ledger tracking",
+                                text = "Tap 'Add Account' above to start tracking credit & advance balances.",
                                 fontSize = 12.sp,
                                 color = WayStockTextSec,
                                 textAlign = TextAlign.Center
@@ -471,8 +381,8 @@ fun KhataBookScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(filteredCustomers, key = { it.id }) { customer ->
                             val recentPurchases = customerRecentItemsMap[customer.id] ?: emptyList()
@@ -487,7 +397,7 @@ fun KhataBookScreen(
                                         amount = itemPrice,
                                         type = "GAVE",
                                         note = "1× $itemName",
-                                        paymentMode = "Credit / Udhar",
+                                        paymentMode = "Credit",
                                         billNumber = "",
                                         date = todayDateStr
                                     )
@@ -612,9 +522,15 @@ private fun KhataCustomerRowCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Right: Prominent Wallet Balance
+                // Right: Prominent Signed Balance
                 val balance = customer.balance
-                val formattedAmt = "₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(balance))}"
+                val isAdvance = balance < 0
+                val isUdharDue = balance > 0
+                val formattedAmt = when {
+                    isAdvance -> "+₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(balance))}"
+                    isUdharDue -> "-₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(balance))}"
+                    else -> "₹0"
+                }
 
                 Surface(
                     color = when {
@@ -622,7 +538,7 @@ private fun KhataCustomerRowCard(
                         isUdharDue -> Color(0xFFFEE2E2)
                         else -> Color(0xFFF1F5F9)
                     },
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(6.dp),
                     border = androidx.compose.foundation.BorderStroke(
                         width = 1.dp,
                         color = when {
@@ -632,106 +548,79 @@ private fun KhataCustomerRowCard(
                         }
                     )
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = when {
-                                isAdvance -> "Advance:"
-                                isUdharDue -> "Udhar:"
-                                else -> "Wallet:"
-                            },
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = when {
-                                isAdvance -> Color(0xFF166534)
-                                isUdharDue -> Color(0xFF991B1B)
-                                else -> WayStockTextSec
-                            }
-                        )
-                        Text(
-                            text = formattedAmt,
-                            fontSize = 14.5.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = when {
-                                isAdvance -> Color(0xFF16A34A)
-                                isUdharDue -> Color(0xFFDC2626)
-                                else -> WayStockDark
-                            },
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
+                    Text(
+                        text = formattedAmt,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = when {
+                            isAdvance -> Color(0xFF15803D)
+                            isUdharDue -> Color(0xFFB91C1C)
+                            else -> WayStockDark
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
             }
 
-            // Quick Repeat Purchases Section (Instant 1-Tap Entry with Auto 1-Min Multiplier)
-            val defaultFallbackItems = remember {
-                listOf(
-                    Pair("Thumsup", 20.0),
-                    Pair("Tea / Chai", 10.0),
-                    Pair("Cigarette", 18.0),
-                    Pair("Water Bottle", 20.0)
-                )
-            }
-            val displayItems = if (recentPurchases.isNotEmpty()) recentPurchases else defaultFallbackItems
+            // Quick Repeat Purchases Section (Only if previous items exist)
+            if (recentPurchases.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "⚡ Quick Entry:",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = WayStockTextSec,
-                    modifier = Modifier.padding(end = 6.dp)
-                )
-
-                LazyRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(displayItems) { item ->
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable {
-                                    onQuickAddPurchase(item.first, item.second)
-                                }
-                                .testTag("quick_item_${customer.id}_${item.first}"),
-                            color = Color(0xFFF8FAFC),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    Text(
+                        text = "Quick +1:",
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WayStockTextSec,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+
+                    LazyRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        items(recentPurchases) { item ->
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable {
+                                        onQuickAddPurchase(item.first, item.second)
+                                    }
+                                    .testTag("quick_item_${customer.id}_${item.first}"),
+                                color = Color(0xFFF8FAFC),
+                                shape = RoundedCornerShape(6.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                             ) {
-                                Text(
-                                    text = "+1",
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = WayStockPrimary
-                                )
-                                Text(
-                                    text = item.first,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = WayStockDark,
-                                    maxLines = 1
-                                )
-                                Text(
-                                    text = "₹${item.second.toInt()}",
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFDC2626)
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "+1",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = WayStockPrimary
+                                    )
+                                    Text(
+                                        text = item.first,
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = WayStockDark,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = "₹${item.second.toInt()}",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFDC2626)
+                                    )
+                                }
                             }
                         }
                     }
@@ -779,12 +668,13 @@ private fun CustomerLedgerDetailView(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
-            shadowElevation = 3.dp
+            shadowElevation = 2.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -799,7 +689,7 @@ private fun CustomerLedgerDetailView(
                         Column {
                             Text(
                                 text = customer.name,
-                                fontSize = 17.sp,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WayStockDark,
                                 maxLines = 1,
@@ -807,33 +697,33 @@ private fun CustomerLedgerDetailView(
                             )
                             Text(
                                 text = if (customer.phone.isNotBlank()) customer.phone else customer.customerType,
-                                fontSize = 11.5.sp,
+                                fontSize = 11.sp,
                                 color = WayStockTextSec
                             )
                         }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                         if (customer.phone.isNotBlank()) {
                             IconButton(onClick = { onSendReminder(customer) }) {
-                                Icon(Icons.Default.Send, contentDescription = "WhatsApp Reminder", tint = Color(0xFF16A34A))
+                                Icon(Icons.Default.Send, contentDescription = "Send Reminder", tint = Color(0xFF16A34A))
                             }
                         }
                         IconButton(onClick = onEditCustomer) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Party", tint = WayStockPrimary)
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Account", tint = WayStockPrimary)
                         }
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Party", tint = Color(0xFFDC2626))
+                            Icon(Icons.Default.Delete, contentDescription = "Delete Account", tint = Color(0xFFDC2626))
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Current Outstanding Card
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(10.dp),
                     color = when {
                         customer.balance > 0 -> Color(0xFFFEE2E2)
                         customer.balance < 0 -> Color(0xFFDCFCE7)
@@ -843,18 +733,18 @@ private fun CustomerLedgerDetailView(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
                             Text(
                                 text = when {
-                                    customer.balance > 0 -> "🔴 Udhar Baaki (Aapko Lene He)"
-                                    customer.balance < 0 -> "🟢 Advance Deposit (Customer Wallet)"
-                                    else -> "Hisab Barabar (Settled)"
+                                    customer.balance > 0 -> "🔴 Amount Due (-)"
+                                    customer.balance < 0 -> "🟢 Advance Deposit (+)"
+                                    else -> "Settled (₹0)"
                                 },
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = when {
                                     customer.balance > 0 -> Color(0xFF991B1B)
@@ -865,15 +755,20 @@ private fun CustomerLedgerDetailView(
                             if (customer.address.isNotBlank()) {
                                 Text(
                                     text = "📍 ${customer.address}",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.5.sp,
                                     color = WayStockTextSec
                                 )
                             }
                         }
 
+                        val signedText = when {
+                            customer.balance > 0 -> "-₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(customer.balance))}"
+                            customer.balance < 0 -> "+₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(customer.balance))}"
+                            else -> "₹0"
+                        }
                         Text(
-                            text = "₹${NumberFormat.getNumberInstance(Locale("en", "IN")).format(abs(customer.balance))}",
-                            fontSize = 22.sp,
+                            text = signedText,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = when {
                                 customer.balance > 0 -> Color(0xFFB91C1C)
@@ -885,41 +780,41 @@ private fun CustomerLedgerDetailView(
                     }
                 }
 
-                // Aaj Ka Hisaab Bar (If customer visited today)
+                // Today's summary bar (If customer visited today)
                 if (todayTransactions.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(8.dp),
                         color = WayStockBg,
                         border = androidx.compose.foundation.BorderStroke(1.dp, WayStockBorder)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "📅 Aaj Ka Hisaab (${todayTransactions.size} visits):",
-                                fontSize = 11.5.sp,
+                                text = "Today's Activity (${todayTransactions.size} entries):",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WayStockDark
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (todayTotalUdhar > 0) {
                                     Text(
-                                        text = "Udhar: ₹${todayTotalUdhar.toInt()}",
-                                        fontSize = 11.5.sp,
+                                        text = "Gave: -₹${todayTotalUdhar.toInt()}",
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFDC2626)
                                     )
                                 }
                                 if (todayTotalJama > 0) {
                                     Text(
-                                        text = "Jama: ₹${todayTotalJama.toInt()}",
-                                        fontSize = 11.5.sp,
+                                        text = "Got: +₹${todayTotalJama.toInt()}",
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF16A34A)
                                     )
@@ -939,13 +834,13 @@ private fun CustomerLedgerDetailView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                    .padding(horizontal = 14.dp, vertical = 5.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("ENTRY & VIVARAN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF475569))
-                Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-                    Text("UDHAR (DIYA)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
-                    Text("JAMA (MILA)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                Text("DETAILS", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF475569))
+                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                    Text("GAVE (-)", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                    Text("RECEIVED (+)", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                 }
             }
         }
@@ -960,10 +855,10 @@ private fun CustomerLedgerDetailView(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(48.dp))
+                    Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(44.dp))
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("No transactions recorded yet", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                    Text("Tap 🔴 Udhar Diya or 🟢 Jama Liya below to add instant entries", fontSize = 12.sp, color = WayStockTextSec, textAlign = TextAlign.Center)
+                    Text("No transactions recorded yet", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                    Text("Tap 'Gave Credit' or 'Received / Advance' below to add entries", fontSize = 11.5.sp, color = WayStockTextSec, textAlign = TextAlign.Center)
                 }
             }
         } else {
@@ -984,44 +879,44 @@ private fun CustomerLedgerDetailView(
             }
         }
 
-        // Bottom Action Bar: [Udhar Diya 🔴] vs [Jama Mila / Advance 🟢]
+        // Bottom Action Bar: [Gave Credit (-)] vs [Received / Advance (+)]
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
-            shadowElevation = 8.dp
+            shadowElevation = 6.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Button(
                     onClick = onAddGave,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(44.dp)
                         .testTag("btn_you_gave")
                 ) {
-                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("🔴 Udhar Diya", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                    Text("Gave Credit (-)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                 }
 
                 Button(
                     onClick = onAddGot,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(44.dp)
                         .testTag("btn_you_got")
                 ) {
-                    Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("🟢 Jama / Advance", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                    Text("Received (+)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                 }
             }
         }
@@ -1079,7 +974,7 @@ private fun KhataTransactionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = if (txn.note.isNotBlank()) txn.note else (if (txn.type == "GAVE") "Maal / Udhar Entry" else "Payment Received"),
+                        text = if (txn.note.isNotBlank()) txn.note else (if (txn.type == "GAVE") "Credit Sale" else "Payment Received"),
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = WayStockDark,

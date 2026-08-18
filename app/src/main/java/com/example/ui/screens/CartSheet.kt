@@ -72,7 +72,11 @@ fun CartSheet(
             .testTag("cart_section"),
         color = Color.White
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
             // Header
             Surface(
                 modifier = Modifier
@@ -143,9 +147,9 @@ fun CartSheet(
                         modifier = Modifier.size(72.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Bucket Khali Hai!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                    Text("Bucket is Empty", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
                     Text(
-                        "Lagta hai aapne abhi tak kuch select nahi kiya. Chalo kuch naya dhundhte hain!",
+                        "You haven't added any items yet. Browse categories to add stock!",
                         fontSize = 13.sp,
                         color = WayStockTextSec,
                         textAlign = TextAlign.Center,
@@ -156,7 +160,7 @@ fun CartSheet(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
                     ) {
-                        Text("Maal Bharo! 🚀", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Browse Items 🚀", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             } else {

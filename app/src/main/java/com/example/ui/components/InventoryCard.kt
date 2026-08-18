@@ -172,19 +172,6 @@ fun InventoryCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (!isFolder && (item.wholesalePrice > 0 || item.mrp > 0)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (item.wholesalePrice > 0) {
-                                    Text("WS: ₹${item.wholesalePrice}", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
-                                }
-                                if (item.wholesalePrice > 0 && item.mrp > 0) {
-                                    Text(" • ", fontSize = 10.sp, color = WayStockTextSec)
-                                }
-                                if (item.mrp > 0) {
-                                    Text("MRP: ₹${item.mrp}", fontSize = 10.5.sp, color = WayStockTextSec)
-                                }
-                            }
-                        }
                     }
                 }
 

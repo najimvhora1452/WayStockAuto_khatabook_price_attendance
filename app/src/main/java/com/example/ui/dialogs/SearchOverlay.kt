@@ -103,7 +103,11 @@ fun SearchOverlay(
             .testTag("search_overlay"),
         color = Color.White
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
             // Search Header Bar
             Surface(
                 modifier = Modifier

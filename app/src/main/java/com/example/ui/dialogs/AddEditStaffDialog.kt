@@ -188,7 +188,7 @@ fun AddEditStaffDialog(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = "⏱️ Daily Wage (Dihadi)",
+                                text = "⏱️ Daily Wage",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (salaryType == "Daily") Color.White else WayStockDark,

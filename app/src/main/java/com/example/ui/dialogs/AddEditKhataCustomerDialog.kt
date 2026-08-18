@@ -69,13 +69,13 @@ fun AddEditKhataCustomerDialog(
                 ) {
                     Column {
                         Text(
-                            text = if (customerToEdit == null) "Add Customer / Party" else "Edit Party Details",
+                            text = if (customerToEdit == null) "Add Ledger Account" else "Edit Account Details",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = WayStockDark
                         )
                         Text(
-                            text = "Khata Book Account Book",
+                            text = "Customer & Supplier Balances",
                             fontSize = 12.sp,
                             color = WayStockTextSec
                         )
@@ -92,7 +92,7 @@ fun AddEditKhataCustomerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Customer", "Supplier", "Staff Khata").forEach { type ->
+                    listOf("Customer", "Supplier", "Staff").forEach { type ->
                         val isSelected = customerType == type
                         Surface(
                             modifier = Modifier
@@ -122,8 +122,8 @@ fun AddEditKhataCustomerDialog(
                         name = it
                         nameError = false
                     },
-                    label = { Text("Party / Customer Name *") },
-                    placeholder = { Text("e.g. Ramesh Bhai, Patel Kirana") },
+                    label = { Text("Name *") },
+                    placeholder = { Text("e.g. John Doe, Acme Corp") },
                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = WayStockPrimary) },
                     isError = nameError,
                     supportingText = { if (nameError) Text("Name is required", color = Color(0xFFDC2626)) },
@@ -144,8 +144,8 @@ fun AddEditKhataCustomerDialog(
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Mobile Number (for WhatsApp / SMS)") },
-                    placeholder = { Text("e.g. +91 98765 43210") },
+                    label = { Text("Phone Number") },
+                    placeholder = { Text("e.g. +1 555-0199") },
                     leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = WayStockPrimary) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth(),
@@ -163,8 +163,8 @@ fun AddEditKhataCustomerDialog(
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
-                    label = { Text("Address / Market Location (Optional)") },
-                    placeholder = { Text("e.g. Shop No. 12, Station Road") },
+                    label = { Text("Address (Optional)") },
+                    placeholder = { Text("e.g. Main Street, Suite 4") },
                     leadingIcon = { Icon(Icons.Default.Place, contentDescription = null, tint = WayStockPrimary) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -178,7 +178,7 @@ fun AddEditKhataCustomerDialog(
                 if (customerToEdit == null) {
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
-                        text = "Opening Balance (Shuruat Ka Hisab)",
+                        text = "Opening Balance",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = WayStockDark
@@ -193,15 +193,15 @@ fun AddEditKhataCustomerDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { balanceType = "GET" },
-                            color = if (balanceType == "GET") Color(0xFF16A34A).copy(alpha = 0.15f) else WayStockSelectedBg,
+                            color = if (balanceType == "GET") Color(0xFFDC2626).copy(alpha = 0.15f) else WayStockSelectedBg,
                             shape = RoundedCornerShape(10.dp),
-                            border = if (balanceType == "GET") androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF16A34A)) else null
+                            border = if (balanceType == "GET") androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFDC2626)) else null
                         ) {
                             Text(
-                                text = "Lene Baaki (+ Get)",
+                                text = "They Owe (Due -)",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (balanceType == "GET") Color(0xFF16A34A) else WayStockTextMain,
+                                color = if (balanceType == "GET") Color(0xFFDC2626) else WayStockTextMain,
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
@@ -211,15 +211,15 @@ fun AddEditKhataCustomerDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { balanceType = "GIVE" },
-                            color = if (balanceType == "GIVE") Color(0xFFDC2626).copy(alpha = 0.15f) else WayStockSelectedBg,
+                            color = if (balanceType == "GIVE") Color(0xFF16A34A).copy(alpha = 0.15f) else WayStockSelectedBg,
                             shape = RoundedCornerShape(10.dp),
-                            border = if (balanceType == "GIVE") androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFDC2626)) else null
+                            border = if (balanceType == "GIVE") androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF16A34A)) else null
                         ) {
                             Text(
-                                text = "Dene Baaki (- Give)",
+                                text = "Advance (Prepaid +)",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (balanceType == "GIVE") Color(0xFFDC2626) else WayStockTextMain,
+                                color = if (balanceType == "GIVE") Color(0xFF16A34A) else WayStockTextMain,
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
@@ -275,7 +275,7 @@ fun AddEditKhataCustomerDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Save Party", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Save Account", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }

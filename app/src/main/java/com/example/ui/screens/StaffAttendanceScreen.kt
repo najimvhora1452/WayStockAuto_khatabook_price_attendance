@@ -84,7 +84,10 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                 shadowElevation = 4.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 18.dp, vertical = 14.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -452,7 +455,7 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Aap konsa attendance report WhatsApp par share karna chahte hain?",
+                        text = "Select the attendance report to share via WhatsApp:",
                         fontSize = 12.5.sp,
                         color = WayStockTextSec
                     )
@@ -507,7 +510,7 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("📊 Monthly Staff Attendance Count", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockPrimary)
-                                Text("Sabhi staff ke iss month ke Total Present, Half-Days & Leaves count", fontSize = 11.sp, color = WayStockTextSec)
+                                Text("Monthly summary of present days, half-days, and leaves for all staff", fontSize = 11.sp, color = WayStockTextSec)
                             }
                         }
                     }
@@ -566,7 +569,7 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("📅 Daily Attendance Roster", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                                Text("Selected tarikh ka Present/Absent list with In-Time & Notes", fontSize = 11.sp, color = WayStockTextSec)
+                                Text("Daily presence roster with check-in time and notes for selected date", fontSize = 11.sp, color = WayStockTextSec)
                             }
                         }
                     }

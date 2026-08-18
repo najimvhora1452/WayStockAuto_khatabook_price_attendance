@@ -98,8 +98,7 @@ import com.example.ui.theme.WayStockTextSec
 data class VoiceCommandExample(
     val category: String,
     val icon: ImageVector,
-    val englishCmd: String,
-    val hindiCmd: String
+    val command: String
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -248,32 +247,32 @@ fun VoiceAssistantDialog(
     // Categories of voice commands
     val commandCategories = listOf(
         "🛒 Add to Bucket" to listOf(
-            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Add 5 Classic Salted", "Vimal 10 packet daalo"),
-            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Add 2 boxes of Marlboro", "5 Classic Salted bucket me add karo"),
-            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Add 10 Lays to cart", "2 packet Marlboro cart me dalo"),
-            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Put 3 Red Bull in bucket", "10 Lays packet add karo")
+            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Add 5 Classic Salted"),
+            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Add 2 boxes of Marlboro"),
+            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Add 10 Lays to cart"),
+            VoiceCommandExample("Add to Bucket", Icons.Outlined.ShoppingCart, "Put 3 Red Bull in bucket")
         ),
         "📁 Open Folder" to listOf(
-            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Open Snacks", "Snacks folder kholo"),
-            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Go to Cigarettes", "Cigarettes me jao"),
-            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Navigate to Paan Masala", "Paan Masala open karo"),
-            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Go back", "Piche jao / Back jao")
+            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Open Snacks"),
+            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Go to Cigarettes"),
+            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Navigate to Paan Masala"),
+            VoiceCommandExample("Open Folder", Icons.Outlined.Folder, "Go back")
         ),
         "📦 Bucket Actions" to listOf(
-            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "Show my bucket", "Mera bucket dikhao"),
-            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "Open cart", "Cart kholo"),
-            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "Clear my bucket", "Cart khali karo"),
-            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "How many items in cart?", "Cart me kitne items hain?")
+            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "Show my bucket"),
+            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "Open cart"),
+            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "Clear my bucket"),
+            VoiceCommandExample("Bucket Actions", Icons.Outlined.Inventory2, "How many items in cart?")
         ),
         "📄 Bill & Slip" to listOf(
-            VoiceCommandExample("Bill & Slip", Icons.Outlined.Description, "Create order slip", "Bill generate karo"),
-            VoiceCommandExample("Bill & Slip", Icons.Outlined.Description, "Share on WhatsApp", "WhatsApp par share karo"),
-            VoiceCommandExample("Bill & Slip", Icons.Outlined.Description, "Generate PDF slip", "Order slip banao")
+            VoiceCommandExample("Bill & Slip", Icons.Outlined.Description, "Create order slip"),
+            VoiceCommandExample("Bill & Slip", Icons.Outlined.Description, "Share on WhatsApp"),
+            VoiceCommandExample("Bill & Slip", Icons.Outlined.Description, "Generate PDF slip")
         ),
         "🔍 Stock Check" to listOf(
-            VoiceCommandExample("Stock Check", Icons.Outlined.Search, "Do we have Red Bull?", "Kya Red Bull hai?"),
-            VoiceCommandExample("Stock Check", Icons.Outlined.Search, "Check stock for Fogg", "Fogg perfume ka stock check karo"),
-            VoiceCommandExample("Stock Check", Icons.Outlined.Search, "Find Classic Salted", "Classic Salted dhundo")
+            VoiceCommandExample("Stock Check", Icons.Outlined.Search, "Do we have Red Bull?"),
+            VoiceCommandExample("Stock Check", Icons.Outlined.Search, "Check stock for Fogg"),
+            VoiceCommandExample("Stock Check", Icons.Outlined.Search, "Find Classic Salted")
         )
     )
 
@@ -343,7 +342,7 @@ fun VoiceAssistantDialog(
                                 color = WayStockTextMain
                             )
                             Text(
-                                text = "English • हिन्दी • Hinglish",
+                                text = "Voice Commands",
                                 fontSize = 11.sp,
                                 color = WayStockTextSec
                             )
@@ -527,88 +526,57 @@ fun VoiceAssistantDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Examples in selected Category (English & Hindi cards)
+                // Examples in selected Category
                 val currentExamples = commandCategories.getOrNull(selectedCategoryIndex)?.second ?: emptyList()
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     currentExamples.forEach { ex ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                            shape = RoundedCornerShape(12.dp)
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    stopListening()
+                                    onExecuteCommand(ex.command)
+                                    onDismiss()
+                                },
+                            color = Color(0xFFF8FAFC),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                // English option
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            stopListening()
-                                            onExecuteCommand(ex.englishCmd)
-                                            onDismiss()
-                                        }
-                                        .padding(horizontal = 8.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(text = "🇺🇸", fontSize = 13.sp)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "\"${ex.englishCmd}\"",
-                                            fontSize = 12.5.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = WayStockTextMain
-                                        )
-                                    }
                                     Icon(
-                                        imageVector = Icons.Default.Send,
-                                        contentDescription = "Run",
-                                        tint = WayStockPrimary.copy(alpha = 0.7f),
+                                        imageVector = ex.icon,
+                                        contentDescription = null,
+                                        tint = WayStockPrimary,
                                         modifier = Modifier.size(16.dp)
                                     )
-                                }
-
-                                // Hindi / Hinglish option
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            stopListening()
-                                            onExecuteCommand(ex.hindiCmd)
-                                            onDismiss()
-                                        }
-                                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(text = "🇮🇳", fontSize = 13.sp)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "\"${ex.hindiCmd}\"",
-                                            fontSize = 12.5.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF0F766E)
-                                        )
-                                    }
-                                    Icon(
-                                        imageVector = Icons.Default.Send,
-                                        contentDescription = "Run",
-                                        tint = Color(0xFF0F766E).copy(alpha = 0.7f),
-                                        modifier = Modifier.size(16.dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "\"${ex.command}\"",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = WayStockTextMain
                                     )
                                 }
+                                Icon(
+                                    imageVector = Icons.Default.Send,
+                                    contentDescription = "Run",
+                                    tint = WayStockPrimary.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
                         }
                     }

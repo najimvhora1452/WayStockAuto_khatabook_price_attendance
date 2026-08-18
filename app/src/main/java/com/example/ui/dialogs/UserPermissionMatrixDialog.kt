@@ -178,7 +178,7 @@ fun UserPermissionMatrixDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Sell,
                         title = "🏷️ Price & Margin Tracker",
-                        description = "Wholesale rates, MRP, Buying Costs and Profit Margin analytics dekh sakte hain",
+                        description = "View wholesale rates, MRP, buying costs, and profit margin analytics",
                         isChecked = permissions.canAccessPricePage,
                         accentColor = Color(0xFFEA580C),
                         onCheckedChange = { permissions = permissions.copy(canAccessPricePage = it) }
@@ -187,7 +187,7 @@ fun UserPermissionMatrixDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Inventory2,
                         title = "📦 Inventory Management",
-                        description = "New items add karna, folder rename karna aur stock edit/delete karna",
+                        description = "Add new items, rename folders, and edit or delete stock",
                         isChecked = permissions.canManageInventory,
                         accentColor = WayStockPrimary,
                         onCheckedChange = { permissions = permissions.copy(canManageInventory = it) }
@@ -196,7 +196,7 @@ fun UserPermissionMatrixDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.MenuBook,
                         title = "💳 Khata Book & Customer Ledger",
-                        description = "Customers/Suppliers ka udhar balance dekhna aur transactions add/delete karna",
+                        description = "View customer balances and add or delete ledger transactions",
                         isChecked = permissions.canManageKhata,
                         accentColor = Color(0xFF0284C7),
                         onCheckedChange = { permissions = permissions.copy(canManageKhata = it) }
@@ -205,7 +205,7 @@ fun UserPermissionMatrixDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Groups,
                         title = "👥 Staff & Attendance Management",
-                        description = "Staff members add karna, attendance record karna aur salary log dekhna",
+                        description = "Add staff members, record attendance, and view salary logs",
                         isChecked = permissions.canManageStaff,
                         accentColor = Color(0xFF059669),
                         onCheckedChange = { permissions = permissions.copy(canManageStaff = it) }
@@ -214,7 +214,7 @@ fun UserPermissionMatrixDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.Campaign,
                         title = "📢 Broadcast Notifications",
-                        description = "Sabhi users ke phone par sticky notification ya global alert bhejna",
+                        description = "Send sticky notifications or global alerts to all app users",
                         isChecked = permissions.canSendBroadcast,
                         accentColor = Color(0xFF7C3AED),
                         onCheckedChange = { permissions = permissions.copy(canSendBroadcast = it) }
@@ -223,7 +223,7 @@ fun UserPermissionMatrixDialog(
                     PermissionToggleItem(
                         icon = Icons.Default.FileDownload,
                         title = "📊 Export Reports & Backup",
-                        description = "Inventory, Khata aur Attendance reports export ya download karna",
+                        description = "Export and download Inventory, Khata, and Staff reports",
                         isChecked = permissions.canExportReports,
                         accentColor = Color(0xFFD97706),
                         onCheckedChange = { permissions = permissions.copy(canExportReports = it) }

@@ -114,7 +114,7 @@ fun PriceHistoryDialog(
                             Text("🕒", fontSize = 40.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("No price changes recorded yet.", fontWeight = FontWeight.Bold, color = WayStockDark)
-                            Text("Jab bhi koi item price update hogi, history yahan record hogi.", fontSize = 12.sp, color = WayStockTextSec)
+                            Text("Price change history will appear here once items are updated.", fontSize = 12.sp, color = WayStockTextSec)
                         }
                     }
                 } else {

@@ -119,7 +119,12 @@ fun StaffAttendanceCalendarSheet(
                 color = WayStockPrimary,
                 shadowElevation = 4.dp
             ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -421,7 +426,7 @@ fun StaffAttendanceCalendarSheet(
                                         Text("✨", fontSize = 20.sp)
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Iss month koi Advance ya Special Notes nahi hai.",
+                                            text = "No advances or special notes recorded for this month.",
                                             fontSize = 11.5.sp,
                                             color = WayStockTextSec,
                                             textAlign = TextAlign.Center
@@ -713,7 +718,7 @@ fun StaffAttendanceCalendarSheet(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "Aap ${staff.name} ko konsa format WhatsApp par send karna chahte hain?",
+                        "Select the summary format to share for ${staff.name}:",
                         fontSize = 12.5.sp,
                         color = WayStockTextSec
                     )
@@ -1021,7 +1026,7 @@ fun StaffAttendanceCalendarSheet(
             },
             text = {
                 Text(
-                    "Agar ${staff.name} job chhod kar chale gaye hain, toh unka record list se remove ho jayega. Kya aap remove karna chahte hain?",
+                    "Are you sure you want to remove ${staff.name}? This will remove them from the active staff roster.",
                     fontSize = 13.sp,
                     color = WayStockDark
                 )

@@ -212,7 +212,7 @@ fun AdminSettingsDialog(
                                 if (loggedInAdminEmail.isNullOrBlank()) {
                                     // Not logged in
                                     Text(
-                                        "Password change aur Auto-Admin launch enable karne ke liye Google Account se Sign-In karein:",
+                                        "Sign in with your Google account to enable cloud sync and auto-admin launch:",
                                         fontSize = 12.sp,
                                         color = WayStockTextSec,
                                         lineHeight = 16.sp
@@ -293,7 +293,7 @@ fun AdminSettingsDialog(
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text("🚀 Auto-Open Admin on Launch", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                                                Text("App open karte hi direct Admin Portal khulega", fontSize = 11.sp, color = WayStockTextSec)
+                                                Text("Directly open Admin portal on app startup", fontSize = 11.sp, color = WayStockTextSec)
                                             }
                                             Switch(
                                                 checked = isAutoLaunchEnabled,
@@ -361,7 +361,7 @@ fun AdminSettingsDialog(
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text("🚀 Auto-Open Admin on Launch", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                                                Text("App open karte hi direct Admin Portal khulega", fontSize = 11.sp, color = WayStockTextSec)
+                                                Text("Directly open Admin portal on app startup", fontSize = 11.sp, color = WayStockTextSec)
                                             }
                                             Switch(
                                                 checked = isAutoLaunchEnabled,
@@ -431,7 +431,7 @@ fun AdminSettingsDialog(
                                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                                     ) {
                                         Text(
-                                            "⚠️ PIN update karne ke liye upar wale section se Google Sign-In karein.",
+                                            "⚠️ Sign in above to update the Master PIN.",
                                             fontSize = 12.sp,
                                             color = WayStockDanger,
                                             modifier = Modifier.padding(10.dp)
@@ -574,7 +574,7 @@ fun AdminSettingsDialog(
                             AnimatedVisibility(visible = isManageDevicesOpen) {
                                 Column(modifier = Modifier.padding(top = 12.dp)) {
                                     Text(
-                                        "Jin-jin accounts ne toggle ON kiya hai unki list. Aap remote OFF ya delete kar sakte hain:",
+                                        "Registered admin accounts. You can manage permissions, toggle auto-launch, or remove devices:",
                                         fontSize = 11.sp,
                                         color = WayStockTextSec
                                     )
@@ -778,7 +778,7 @@ fun AdminSettingsDialog(
                             Column(modifier = Modifier.padding(top = 14.dp)) {
                                 if (userRequestedItems.isEmpty()) {
                                     Text(
-                                        "Abhi koi pending user request nahi hai. 🍃",
+                                        "No pending custom item requests.",
                                         fontSize = 13.sp,
                                         color = WayStockTextSec,
                                         modifier = Modifier.padding(vertical = 8.dp)

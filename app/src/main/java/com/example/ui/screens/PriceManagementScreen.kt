@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.InventoryItemEntity
 import com.example.ui.WayStockViewModel
+import com.example.ui.dialogs.AddNewPriceItemDialog
 import com.example.ui.dialogs.PriceHistoryDialog
 import com.example.ui.dialogs.PriceUpdateDialog
 import com.example.ui.dialogs.ShareRateCardDialog
@@ -47,6 +48,7 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
     var itemForHistoryView by remember { mutableStateOf<InventoryItemEntity?>(null) }
     var isAllHistoryOpen by remember { mutableStateOf(false) }
     var isShareRateCardOpen by remember { mutableStateOf(false) }
+    var isAddNewPriceItemOpen by remember { mutableStateOf(false) }
 
     // Filter only concrete items (not folder structures)
     val actualItems = remember(allInventoryItems) {
@@ -54,8 +56,10 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
     }
 
     // Extract categories
-    val categories = remember(actualItems) {
-        actualItems.map { it.parent.substringBefore(">") }.distinct().filter { it.isNotBlank() }
+    val categories = remember(allInventoryItems) {
+        allInventoryItems.map { if (it.type == "folder") it.name else it.parent.substringBefore(">") }
+            .filter { it.isNotBlank() && it != "root" }
+            .distinct()
     }
 
     // Filtered items based on search and filters
@@ -107,13 +111,18 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
             .testTag("price_management_screen")
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // 1. Top Bar / Header
+            // 1. Compact Top Bar / Header
             Surface(
                 color = Color.White,
-                shadowElevation = 3.dp,
+                shadowElevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -121,139 +130,144 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
-                                shape = CircleShape,
+                                shape = RoundedCornerShape(8.dp),
                                 color = Color(0xFFFFEDD5),
-                                modifier = Modifier.size(40.dp)
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         Icons.Default.Sell,
                                         contentDescription = "Price Tracker",
                                         tint = Color(0xFFEA580C),
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    "Price & Margin Tracker",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = WayStockDark
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (uiState.isSuperAdmin) {
-                                        Text(
-                                            "👑 Super Premium (Owner)",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFB45309)
-                                        )
-                                    } else {
-                                        Text(
-                                            "⭐ Premium Authorized Staff",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF15803D)
-                                        )
-                                    }
-                                }
-                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Price Catalog",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = WayStockDark
+                            )
                         }
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            // Add Item Button
+                            Button(
+                                onClick = { isAddNewPriceItemOpen = true },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary),
+                                modifier = Modifier.height(34.dp).testTag("add_price_item_button")
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Add Item", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+
                             // Price History Button
                             IconButton(
                                 onClick = { isAllHistoryOpen = true },
-                                modifier = Modifier.size(38.dp)
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Icon(
                                     Icons.Default.History,
                                     contentDescription = "All History",
                                     tint = WayStockPrimary,
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
                             // Share Rate Card Button
                             IconButton(
                                 onClick = { isShareRateCardOpen = true },
-                                modifier = Modifier.size(38.dp)
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Icon(
                                     Icons.Default.Share,
                                     contentDescription = "Share Rate Card",
                                     tint = Color(0xFF16A34A),
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    // Metric Cards Row
+                    // Compact Stat Badges in single row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // Total items
-                        MetricTile(
-                            title = "Tracked Items",
-                            value = "$totalItemsCount",
-                            subText = "Live Prices",
-                            color = WayStockPrimary,
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFF1F5F9),
                             modifier = Modifier.weight(1f)
-                        )
+                        ) {
+                            Column(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                Text("Items", fontSize = 10.sp, color = WayStockTextSec)
+                                Text("$totalItemsCount", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                            }
+                        }
 
-                        // Wholesale Margin
-                        MetricTile(
-                            title = "Avg Wholesale",
-                            value = "${String.format(Locale.US, "%.1f", avgWholesaleMargin)}%",
-                            subText = "B2B Margin",
-                            color = Color(0xFF0284C7),
-                            modifier = Modifier.weight(1f)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFE0F2FE),
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            Column(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                Text("Wholesale Avg", fontSize = 10.sp, color = Color(0xFF0369A1))
+                                Text("${String.format(Locale.US, "%.1f", avgWholesaleMargin)}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
+                            }
+                        }
 
-                        // Retail Margin
-                        MetricTile(
-                            title = "Avg Retail MRP",
-                            value = "${String.format(Locale.US, "%.1f", avgRetailMargin)}%",
-                            subText = "Profit %",
-                            color = Color(0xFF16A34A),
-                            modifier = Modifier.weight(1f)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFDCFCE7),
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            Column(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                Text("Retail Margin", fontSize = 10.sp, color = Color(0xFF15803D))
+                                Text("${String.format(Locale.US, "%.1f", avgRetailMargin)}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                            }
+                        }
 
-                        // Recent Hikes
-                        MetricTile(
-                            title = "Price Hikes",
-                            value = "$recentPriceHikesCount",
-                            subText = "📈 Trend",
-                            color = Color(0xFFEA580C),
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFFFEDD5),
                             modifier = Modifier.weight(1f)
-                        )
+                        ) {
+                            Column(modifier = Modifier.padding(vertical = 4.dp, horizontal = 6.dp)) {
+                                Text("Hikes", fontSize = 10.sp, color = Color(0xFFC2410C))
+                                Text("$recentPriceHikesCount 📈", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                            }
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Search Field
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search item name, brand or category...", fontSize = 13.sp, color = WayStockTextSec) },
+                        placeholder = { Text("Search item, brand or category...", fontSize = 12.5.sp, color = WayStockTextSec) },
                         leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = WayStockTextSec, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = WayStockTextSec, modifier = Modifier.size(18.dp))
                         },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = WayStockTextSec, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = WayStockTextSec, modifier = Modifier.size(16.dp))
                                 }
                             }
                         },
                         singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = WayStockDark,
                             unfocusedTextColor = WayStockDark,
@@ -264,11 +278,11 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
+                            .height(42.dp)
                             .testTag("price_search_input")
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Filter Chips Row
                     LazyRow(
@@ -287,7 +301,7 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
                         }
                         item {
                             FilterChipItem(
-                                title = "📈 Price Hikes ($recentPriceHikesCount)",
+                                title = "📈 Hikes ($recentPriceHikesCount)",
                                 isSelected = selectedFilter == "HIKED",
                                 onClick = { selectedFilter = "HIKED" }
                             )
@@ -328,11 +342,11 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🔍", fontSize = 42.sp)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text("No items match the selected filter.", fontWeight = FontWeight.Bold, color = WayStockDark)
-                        Text("Search query badal kar dekhein ya All Items select karein.", fontSize = 12.sp, color = WayStockTextSec)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                        Icon(Icons.Outlined.Sell, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(40.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No Items in Price Catalog", fontWeight = FontWeight.Bold, color = WayStockDark)
+                        Text("Tap '+ Add Item' above to add your first priced item.", fontSize = 12.sp, color = WayStockTextSec, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
             } else {
@@ -340,8 +354,8 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredItems, key = { it.key }) { item ->
                         ItemPriceCard(
@@ -352,6 +366,18 @@ fun PriceManagementScreen(viewModel: WayStockViewModel) {
                     }
                 }
             }
+        }
+
+        // Add New Item with Price Dialog
+        if (isAddNewPriceItemOpen) {
+            AddNewPriceItemDialog(
+                existingCategories = categories,
+                onDismiss = { isAddNewPriceItemOpen = false },
+                onSave = { name, cat, unit, mrp, ws, cost ->
+                    viewModel.addNewItemWithPrice(name, cat, unit, mrp, ws, cost)
+                    isAddNewPriceItemOpen = false
+                }
+            )
         }
 
         // Price Update Modal

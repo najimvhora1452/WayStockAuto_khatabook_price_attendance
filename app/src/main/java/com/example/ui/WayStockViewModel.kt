@@ -251,9 +251,9 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(isAutoLaunchEnabled = isEnabled) }
 
         if (isEnabled) {
-            showAlert("🚀 Auto-Launch ON! App open hone par direct Admin page khulega.", "success")
+            showAlert("🚀 Auto-Launch ON! Admin portal will open directly on app startup.", "success")
         } else {
-            showAlert("Auto-Launch OFF kar diya gaya hai.", "info")
+            showAlert("Auto-Launch disabled.", "info")
         }
 
         // Sync with cloud in background if email is present
@@ -674,7 +674,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
 
         // 1. Check if logged in with Google
         if (loggedInEmail.isNullOrBlank()) {
-            showAlert("⚠️ Password change karne ke liye pehle Google Sign-In karein!", "error")
+            showAlert("⚠️ Please sign in with Google first to change PIN!", "error")
             return
         }
 
@@ -686,7 +686,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
 
         // 3. Verify old PIN
         if (oldPin != state.adminPin) {
-            showAlert("🚫 Purana (Old) PIN galat hai!", "error")
+            showAlert("🚫 Incorrect old PIN!", "error")
             return
         }
 
@@ -709,7 +709,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
 
     fun sendBroadcastNotification(message: String) {
         if (message.trim().isEmpty()) {
-            showAlert("Message empty hai! ✍️", "error")
+            showAlert("Message cannot be empty!", "error")
             return
         }
         _uiState.update { it.copy(broadcastMessage = message.trim(), isAdminSettingsOpen = false) }
@@ -1568,6 +1568,50 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 updatedBy = updatedBy
             )
             showAlert("✅ Rates updated for ${item.displayName.ifBlank { item.name }} (Wholesale: ₹$newWholesale, MRP: ₹$newMrp)", "success")
+        }
+    }
+
+    fun addNewItemWithPrice(
+        name: String,
+        category: String,
+        unit: String,
+        mrp: Double,
+        wholesale: Double,
+        cost: Double
+    ) {
+        viewModelScope.launch {
+            val rootCat = category.trim().ifBlank { "General" }
+            val itemName = name.trim()
+            if (itemName.isBlank()) return@launch
+            val key = if (rootCat == "root" || rootCat.isBlank()) itemName else "$rootCat>$itemName"
+            val item = InventoryItemEntity(
+                key = key,
+                name = itemName,
+                displayName = itemName,
+                type = "item",
+                parent = rootCat,
+                allowedUnitsCsv = unit.ifBlank { "Box" },
+                currentUnit = unit.ifBlank { "Box" },
+                mrp = mrp,
+                wholesalePrice = wholesale,
+                costPrice = cost,
+                previousMrp = mrp,
+                previousWholesale = wholesale,
+                lastPriceUpdated = System.currentTimeMillis()
+            )
+            repository.insertOrUpdateItem(item)
+            if (mrp > 0 || wholesale > 0 || cost > 0) {
+                repository.updateItemPrice(
+                    item = item,
+                    newMrp = mrp,
+                    newWholesale = wholesale,
+                    newCost = cost,
+                    note = "Initial Price Entry",
+                    updatedBy = _uiState.value.loggedInAdminName ?: "Admin"
+                )
+            }
+            syncFolderAndItemTypes()
+            showAlert("✅ '$itemName' added with prices to catalog!", "success")
         }
     }
 
