@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="256dp"
+    android:height="256dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    
+    <!-- Circular Gradient Background -->
+    <path android:pathData="M 128,0 A 128,128 0 1,1 127.9,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="128"
+                android:startY="0"
+                android:endX="128"
+                android:endY="256"
+                android:type="linear">
+                <item android:color="#FF16556E" android:offset="0.0" />
+                <item android:color="#FF1A7D8C" android:offset="0.45" />
+                <item android:color="#FF1FB196" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Top Geometric Arm of WayStock Logo -->
+    <path
+        android:pathData="M 109,42.6 L 61.6,94.8 L 125.6,173"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="17.8"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter"
+        android:strokeMiterLimit="4" />
+
+    <!-- Bottom Geometric Arm of WayStock Logo -->
+    <path
+        android:pathData="M 130.4,83 L 194.4,161.2 L 147,213.4"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="17.8"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter"
+        android:strokeMiterLimit="4" />
+</vector>

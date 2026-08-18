@@ -1,0 +1,6 @@
+{
+  "name": "WayStock",
+  "description": "Smart Digital Stock & Inventory Management Console with user and admin modes, bucket ordering, custom unit manager, and order slip generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
