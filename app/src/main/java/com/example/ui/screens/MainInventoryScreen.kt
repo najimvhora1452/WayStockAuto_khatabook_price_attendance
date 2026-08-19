@@ -55,31 +55,16 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // Play notification sound when a new broadcast message is received
-    LaunchedEffect(uiState.broadcastMessage) {
-        uiState.broadcastMessage?.let {
-            try {
-                val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-                toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 300)
-            } catch (_: Exception) {}
-        }
-    }
-
     val currentAdminDevice = remember(allAdminDevices, uiState.loggedInAdminEmail) {
         allAdminDevices.find { it.email.equals(uiState.loggedInAdminEmail, ignoreCase = true) }
     }
     val isPriceTabAccessible = uiState.isSuperAdmin || (uiState.isAdminMode && (masterSecurityConfig.isPricePageGlobalToPremium || currentAdminDevice?.permissions?.canAccessPricePage == true))
 
-    // Handle Android system back gesture and back button gracefully for screen-level states
-    val isDialogCurrentlyOpen = uiState.isAddModalOpen ||
+    // Handle Android system back gesture and back button gracefully for all nested states and sheets
+    val isAnyOverlayOrNestedOpen = uiState.isAdminSettingsOpen ||
             uiState.isAdminGatewayOpen ||
-            uiState.isAdminSettingsOpen ||
             uiState.isShareAppOpen ||
-            uiState.isAddStaffDialogOpen ||
-            uiState.isAddKhataCustomerOpen ||
-            uiState.isAddKhataTxnOpen
-
-    val isAnyOverlayOrNestedOpen = !isDialogCurrentlyOpen && (
+            uiState.isKhataMemosOpen ||
             uiState.isSelectionMode ||
             uiState.isSearchOpen ||
             uiState.isOrderSlipOpen ||
@@ -88,10 +73,13 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
             uiState.isKhataDetailOpen ||
             uiState.currentTab != "inventory" ||
             uiState.pathStack.size > 1
-    )
 
     BackHandler(enabled = isAnyOverlayOrNestedOpen) {
         when {
+            uiState.isAdminSettingsOpen -> viewModel.setAdminSettingsOpen(false)
+            uiState.isAdminGatewayOpen -> viewModel.setAdminGatewayOpen(false)
+            uiState.isShareAppOpen -> viewModel.setShareAppOpen(false)
+            uiState.isKhataMemosOpen -> viewModel.setKhataMemosOpen(false)
             uiState.isSelectionMode -> viewModel.clearCardSelection()
             uiState.isSearchOpen -> viewModel.setSearchOpen(false)
             uiState.isOrderSlipOpen -> viewModel.setOrderSlipOpen(false)
@@ -581,6 +569,10 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
                 masterPinLastModifiedAt = uiState.masterPinLastModifiedAt,
                 masterSecurityConfig = masterSecurityConfig,
                 adminAuthManager = viewModel.adminAuthManager,
+                isStickyBottomMemoBarEnabled = uiState.isStickyBottomMemoBarEnabled,
+                onToggleStickyBottomMemoBar = { viewModel.toggleStickyBottomMemoBar(it) },
+                isStickyNotificationEnabled = uiState.isKhataStickyNotificationEnabled,
+                onToggleStickyNotification = { viewModel.toggleKhataStickyNotification(it) },
                 onDismiss = { viewModel.setAdminSettingsOpen(false) },
                 onGoogleLoginSuccess = { email, name -> viewModel.handleGoogleLoginResult(email, name) },
                 onGoogleLoginLoading = { loading -> viewModel.setGoogleAuthLoading(loading) },

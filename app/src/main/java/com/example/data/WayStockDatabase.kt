@@ -15,9 +15,10 @@ import androidx.room.RoomDatabase
         AttendanceRecordEntity::class,
         KhataCustomerEntity::class,
         KhataTransactionEntity::class,
-        PriceHistoryEntity::class
+        PriceHistoryEntity::class,
+        KhataMemoEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class WayStockDatabase : RoomDatabase() {

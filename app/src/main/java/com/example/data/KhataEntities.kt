@@ -37,3 +37,14 @@ data class KhataTransactionEntity(
     val billNumber: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )
+
+/**
+ * Quick Sticky Note / Memo / Reminder for Khata Section
+ */
+@Entity(tableName = "khata_memos")
+data class KhataMemoEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
+    val note: String,
+    val timestamp: Long = System.currentTimeMillis()
+)

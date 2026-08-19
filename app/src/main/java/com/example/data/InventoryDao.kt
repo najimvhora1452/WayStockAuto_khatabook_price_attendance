@@ -161,4 +161,17 @@ interface InventoryDao {
         timestamp: Long,
         note: String
     )
+
+    // Khata Quick Memos & Notifications Queries
+    @Query("SELECT * FROM khata_memos ORDER BY timestamp DESC")
+    fun getAllKhataMemosFlow(): Flow<List<KhataMemoEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertKhataMemo(memo: KhataMemoEntity)
+
+    @Query("DELETE FROM khata_memos WHERE id = :id")
+    suspend fun deleteKhataMemo(id: Long)
+
+    @Query("DELETE FROM khata_memos")
+    suspend fun clearAllKhataMemos()
 }

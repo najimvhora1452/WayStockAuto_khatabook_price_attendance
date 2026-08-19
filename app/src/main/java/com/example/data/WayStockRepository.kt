@@ -174,4 +174,17 @@ class WayStockRepository(context: Context) {
     }
 
     suspend fun deletePriceHistory(id: Long) = dao.deletePriceHistory(id)
+
+    // Khata Quick Memos & Notifications
+    val allKhataMemos: Flow<List<KhataMemoEntity>> = dao.getAllKhataMemosFlow()
+
+    suspend fun insertKhataMemo(note: String) {
+        if (note.isNotBlank()) {
+            dao.insertKhataMemo(KhataMemoEntity(note = note.trim()))
+        }
+    }
+
+    suspend fun deleteKhataMemo(id: Long) = dao.deleteKhataMemo(id)
+
+    suspend fun clearAllKhataMemos() = dao.clearAllKhataMemos()
 }

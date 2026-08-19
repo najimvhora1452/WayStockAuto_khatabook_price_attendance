@@ -156,47 +156,68 @@ fun ShareRateCardDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Bottom Buttons
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("WayStock Rates", formattedRateCard)
-                            clipboard.setPrimaryClip(clip)
-                            copiedSnackbar = true
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (copiedSnackbar) "Copied! ✅" else "Copy Text", fontWeight = FontWeight.Bold)
-                    }
-
                     Button(
                         onClick = {
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, formattedRateCard)
-                                type = "text/plain"
-                            }
-                            val shareIntent = Intent.createChooser(sendIntent, "Share Rate Card via")
-                            context.startActivity(shareIntent)
+                            com.example.ui.util.RateCardImageGenerator.generateAndShareRateCardImage(context, actualItems)
                         },
                         modifier = Modifier
-                            .weight(1.3f)
+                            .fillMaxWidth()
                             .height(46.dp)
-                            .testTag("share_whatsapp_button"),
+                            .testTag("share_image_button"),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                        colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share to WhatsApp", fontWeight = FontWeight.Bold, color = Color.White)
+                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Share Rate Poster (1200×1650 HD)", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("WayStock Rates", formattedRateCard)
+                                clipboard.setPrimaryClip(clip)
+                                copiedSnackbar = true
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(17.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (copiedSnackbar) "Copied! ✅" else "Copy Text", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, formattedRateCard)
+                                    type = "text/plain"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, "Share Rate Card via")
+                                context.startActivity(shareIntent)
+                            },
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(44.dp)
+                                .testTag("share_whatsapp_button"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(17.dp), tint = Color.White)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Share WhatsApp", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.5.sp)
+                        }
                     }
                 }
             }

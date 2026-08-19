@@ -60,7 +60,9 @@ data class WayStockUiState(
     val khataTxnTypeToAdd: String = "GAVE", // "GAVE" or "GOT"
     val khataSearchQuery: String = "",
     val khataFilterType: String = "ALL", // "ALL", "CUSTOMERS", "SUPPLIERS", "PENDING"
-    val isKhataStickyNotificationEnabled: Boolean = false
+    val isKhataStickyNotificationEnabled: Boolean = false,
+    val isStickyBottomMemoBarEnabled: Boolean = true,
+    val isKhataMemosOpen: Boolean = false
 )
 
 class WayStockViewModel(application: Application) : AndroidViewModel(application) {
@@ -129,6 +131,9 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allKhataMemos: StateFlow<List<com.example.data.KhataMemoEntity>> = repository.allKhataMemos
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
             repository.seedInitialDataIfEmpty()
@@ -166,9 +171,15 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        // Restore sticky khata notification state
+        // Restore sticky khata notification state and bottom memo bar state
         val isStickyOn = com.example.service.KhataStickyNotificationService.isStickyKhataEnabled(application)
-        _uiState.update { it.copy(isKhataStickyNotificationEnabled = isStickyOn) }
+        val isBottomMemoOn = adminAuthManager.isStickyBottomMemoBarEnabled()
+        _uiState.update { 
+            it.copy(
+                isKhataStickyNotificationEnabled = isStickyOn,
+                isStickyBottomMemoBarEnabled = isBottomMemoOn
+            ) 
+        }
 
         // Listen for Firestore Master Security PIN & update local state
         viewModelScope.launch {
@@ -538,30 +549,55 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
             // Target folder to insert into (either explicitly clicked item/folder or current folder)
             val baseParent = state.addModalTargetFolder ?: state.currentFolder
 
-            // Bulk import parsing
+            // Multi-level hierarchy parsing with support for comma-separated items at each level
+            // e.g. "vegetable > fruit > mango, banana, grapes, orange > green"
             val lines = text.split("\n", "\t").map { it.trim() }.filter { it.isNotEmpty() }
             lines.forEach { line ->
-                val levels = line.split(">").map { lvl ->
-                    lvl.trim().split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
-                }
-                var currentParent = baseParent
+                val levelSegments = line.split(">").map { it.trim() }.filter { it.isNotEmpty() }
+                if (levelSegments.isEmpty()) return@forEach
 
-                levels.forEachIndexed { index, name ->
-                    val isLast = index == levels.size - 1
-                    val uniqueKey = if (currentParent == "root") name else "$currentParent>$name"
-                    val existing = repository.getItemByKey(uniqueKey)
+                // For each level segment, split by ',' to get multiple sibling items/folders
+                val levelItemLists: List<List<String>> = levelSegments.map { segment ->
+                    segment.split(",")
+                        .map { itemName ->
+                            itemName.trim().split(" ")
+                                .filter { it.isNotBlank() }
+                                .joinToString(" ") { word -> word.replaceFirstChar { c -> c.uppercase() } }
+                        }
+                        .filter { it.isNotBlank() }
+                }.filter { it.isNotEmpty() }
 
-                    if (existing == null) {
-                        val newItem = InventoryItemEntity(
-                            key = uniqueKey,
-                            name = name,
-                            displayName = name,
-                            type = if (isLast) "item" else "folder",
-                            parent = currentParent
-                        )
-                        repository.insertOrUpdateItem(newItem)
+                if (levelItemLists.isEmpty()) return@forEach
+
+                var currentParents = listOf(baseParent)
+
+                levelItemLists.forEachIndexed { lvlIndex, namesAtThisLevel ->
+                    val isLast = (lvlIndex == levelItemLists.size - 1)
+                    val nextParents = mutableListOf<String>()
+
+                    currentParents.forEach { parentKey ->
+                        namesAtThisLevel.forEach { name ->
+                            val uniqueKey = if (parentKey == "root") name else "$parentKey>$name"
+                            val existing = repository.getItemByKey(uniqueKey)
+
+                            if (existing == null) {
+                                val newItem = InventoryItemEntity(
+                                    key = uniqueKey,
+                                    name = name,
+                                    displayName = name,
+                                    type = if (isLast) "item" else "folder",
+                                    parent = parentKey
+                                )
+                                repository.insertOrUpdateItem(newItem)
+                            } else if (!isLast && existing.type != "folder") {
+                                // If intermediate node already existed as an item, promote it to folder
+                                repository.insertOrUpdateItem(existing.copy(type = "folder"))
+                            }
+
+                            nextParents.add(uniqueKey)
+                        }
                     }
-                    currentParent = uniqueKey
+                    currentParents = nextParents
                 }
             }
             syncFolderAndItemTypes()
@@ -1663,5 +1699,41 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 showAlert("❌ Failed: ${result.exceptionOrNull()?.message}", "error")
             }
         }
+    }
+
+    // ==========================================
+    // KHATA STICKY MEMOS & QUICK NOTIFICATIONS
+    // ==========================================
+
+    fun setKhataMemosOpen(open: Boolean) {
+        _uiState.update { it.copy(isKhataMemosOpen = open) }
+    }
+
+    fun addKhataMemo(note: String) {
+        if (note.isBlank()) return
+        viewModelScope.launch {
+            repository.insertKhataMemo(note.trim())
+            showAlert("✅ Note added to Khata Notifications!", "success")
+        }
+    }
+
+    fun deleteKhataMemo(id: Long) {
+        viewModelScope.launch {
+            repository.deleteKhataMemo(id)
+            showAlert("🗑️ Notification removed", "info")
+        }
+    }
+
+    fun clearAllKhataMemos() {
+        viewModelScope.launch {
+            repository.clearAllKhataMemos()
+            showAlert("🗑️ All notifications cleared", "info")
+        }
+    }
+
+    fun toggleStickyBottomMemoBar(enabled: Boolean) {
+        adminAuthManager.setStickyBottomMemoBarEnabled(enabled)
+        _uiState.update { it.copy(isStickyBottomMemoBarEnabled = enabled) }
+        showAlert(if (enabled) "📌 Khata memo bar enabled" else "📌 Khata memo bar hidden", "info")
     }
 }

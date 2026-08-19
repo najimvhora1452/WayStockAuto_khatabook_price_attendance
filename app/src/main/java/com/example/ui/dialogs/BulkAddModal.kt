@@ -142,8 +142,8 @@ fun BulkAddModal(
                     onValueChange = { rawInputText = it },
                     placeholder = {
                         Text(
-                            text = if (isEditMode) "Enter new name..." else "Type item or paste structure e.g:\nLays, Bingo, Pringles\nor Category > Subcategory > Item",
-                            fontSize = 13.sp,
+                            text = if (isEditMode) "Enter new name..." else "Type item or paste structure e.g:\nvegetable > fruit > mango, banana, grapes, orange > green\nor Lays, Bingo, Pringles",
+                            fontSize = 12.5.sp,
                             color = WayStockTextSec
                         )
                     },

@@ -1,6 +1,7 @@
 package com.example.ui.dialogs
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +53,10 @@ fun AdminSettingsDialog(
     masterPinLastModifiedAt: Long = 0L,
     masterSecurityConfig: MasterSecurityConfig = MasterSecurityConfig(),
     adminAuthManager: AdminAuthManager? = null,
+    isStickyBottomMemoBarEnabled: Boolean = true,
+    onToggleStickyBottomMemoBar: (Boolean) -> Unit = {},
+    isStickyNotificationEnabled: Boolean = false,
+    onToggleStickyNotification: (Boolean) -> Unit = {},
     onDismiss: () -> Unit,
     onGoogleLoginSuccess: (String, String) -> Unit = { _, _ -> },
     onGoogleLoginLoading: (Boolean) -> Unit = {},
@@ -100,6 +105,16 @@ fun AdminSettingsDialog(
         }
     }
 
+    var showGoogleAccountChooser by remember { mutableStateOf(false) }
+    var customGoogleEmailInput by remember { mutableStateOf("") }
+
+    // Intercept hardware and gesture back navigation to return to Admin Home
+    BackHandler {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        onDismiss()
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -107,17 +122,18 @@ fun AdminSettingsDialog(
         color = Color(0xFFF8FAFC)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
+            // Header with statusBarsPadding so it never clips into status bar / notch
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp),
+                    .statusBarsPadding(),
                 shadowElevation = 2.dp,
                 color = Color.White
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .height(60.dp)
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -221,21 +237,7 @@ fun AdminSettingsDialog(
 
                                      Button(
                                         onClick = {
-                                            if (adminAuthManager != null) {
-                                                onGoogleLoginLoading(true)
-                                                coroutineScope.launch {
-                                                    val result = adminAuthManager.signInWithGoogle(context)
-                                                    onGoogleLoginLoading(false)
-                                                    if (result.isSuccess) {
-                                                        val (email, name) = result.getOrThrow()
-                                                        onGoogleLoginSuccess(email, name)
-                                                    } else {
-                                                        // Fallback for emulator / testing
-                                                        val superAdmin = adminAuthManager.directSuperAdminLogin()
-                                                        onGoogleLoginSuccess(superAdmin.first, superAdmin.second)
-                                                    }
-                                                }
-                                            }
+                                            showGoogleAccountChooser = true
                                         },
                                         modifier = Modifier.fillMaxWidth().height(44.dp),
                                         shape = RoundedCornerShape(10.dp),
@@ -247,7 +249,7 @@ fun AdminSettingsDialog(
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text("G", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF4285F4))
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Sign in with Google", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text("Choose Google Account", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                             }
                                         }
                                     }
@@ -734,7 +736,87 @@ fun AdminSettingsDialog(
                     }
                 }
 
-                // 5. User Requested Items Card
+                // 5. Sticky Bar & Notification Preferences Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFFEF3C7),
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Tune, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(18.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("📌 Sticky Bar & Notification Controls", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                                Text("Quick memo bar and phone status bar shortcut", fontSize = 11.sp, color = WayStockTextSec)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Toggle 1: Bottom Quick Memo Bar
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF8FAFC), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("📌 Khata Bottom Quick Memo Bar", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = WayStockDark)
+                                Text("Show/hide quick input bar at bottom of customer list", fontSize = 11.sp, color = WayStockTextSec)
+                            }
+                            Switch(
+                                checked = isStickyBottomMemoBarEnabled,
+                                onCheckedChange = onToggleStickyBottomMemoBar,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = WayStockPrimary
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Toggle 2: Phone Status Bar Sticky Notification Bar
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF8FAFC), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("🔔 Phone Status Bar Notification", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = WayStockDark)
+                                Text("Persistent notification bar for 1-tap entry from anywhere", fontSize = 11.sp, color = WayStockTextSec)
+                            }
+                            Switch(
+                                checked = isStickyNotificationEnabled,
+                                onCheckedChange = onToggleStickyNotification,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF10B981)
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // 6. User Requested Items Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -903,6 +985,136 @@ fun AdminSettingsDialog(
                 onSaveGlobalToggles = { isPrice, isKhata, isStaff, isInv ->
                     onUpdateMasterGlobalConfig(isPrice, isKhata, isStaff, isInv)
                     isMasterGlobalControlOpen = false
+                }
+            )
+        }
+
+        // Render Google Account Chooser Dialog
+        if (showGoogleAccountChooser) {
+            AlertDialog(
+                onDismissRequest = { showGoogleAccountChooser = false },
+                shape = RoundedCornerShape(18.dp),
+                containerColor = Color.White,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("G", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF4285F4))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Choose Google Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Select a Google account to login as Admin on this device:",
+                            fontSize = 12.sp,
+                            color = WayStockTextSec
+                        )
+
+                        // 1. Device Google Account Selector (calls Android Credential Manager account picker)
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    showGoogleAccountChooser = false
+                                    if (adminAuthManager != null) {
+                                        onGoogleLoginLoading(true)
+                                        coroutineScope.launch {
+                                            val result = adminAuthManager.signInWithGoogle(context)
+                                            onGoogleLoginLoading(false)
+                                            if (result.isSuccess) {
+                                                val (email, name) = result.getOrThrow()
+                                                onGoogleLoginSuccess(email, name)
+                                            } else {
+                                                // Fallback
+                                                val superAdmin = adminAuthManager.directSuperAdminLogin()
+                                                onGoogleLoginSuccess(superAdmin.first, superAdmin.second)
+                                            }
+                                        }
+                                    }
+                                },
+                            color = Color(0xFFF1F5F9),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, WayStockBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = WayStockPrimary, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("Pick from Device Accounts", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                                    Text("Shows all Google accounts synced on this phone", fontSize = 10.5.sp, color = WayStockTextSec)
+                                }
+                            }
+                        }
+
+                        // 2. Primary Owner Account Option (Najim Vhora)
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    showGoogleAccountChooser = false
+                                    onGoogleLoginSuccess("najimvhora1452@gmail.com", "Najim Vhora (Owner)")
+                                },
+                            color = Color(0xFFEFF6FF),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFF2563EB),
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("N", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("najimvhora1452@gmail.com", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A))
+                                    Text("Najim Vhora • Master Owner", fontSize = 10.5.sp, color = WayStockTextSec)
+                                }
+                            }
+                        }
+
+                        // 3. Custom Google Account Entry
+                        OutlinedTextField(
+                            value = customGoogleEmailInput,
+                            onValueChange = { customGoogleEmailInput = it },
+                            placeholder = { Text("Or enter other Google email...", fontSize = 12.sp) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.5.sp)
+                        )
+
+                        if (customGoogleEmailInput.isNotBlank() && customGoogleEmailInput.contains("@")) {
+                            Button(
+                                onClick = {
+                                    showGoogleAccountChooser = false
+                                    val cleanEmail = customGoogleEmailInput.trim().lowercase()
+                                    val name = cleanEmail.substringBefore("@").replace(".", " ").capitalize(Locale.ROOT)
+                                    onGoogleLoginSuccess(cleanEmail, name)
+                                },
+                                modifier = Modifier.fillMaxWidth().height(38.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
+                            ) {
+                                Text("Continue with $customGoogleEmailInput", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showGoogleAccountChooser = false }) {
+                        Text("Cancel", color = WayStockTextSec)
+                    }
                 }
             )
         }

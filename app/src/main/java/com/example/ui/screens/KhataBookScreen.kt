@@ -38,6 +38,7 @@ import com.example.data.KhataTransactionEntity
 import com.example.ui.WayStockViewModel
 import com.example.ui.dialogs.AddEditKhataCustomerDialog
 import com.example.ui.dialogs.AddKhataTransactionDialog
+import com.example.ui.dialogs.KhataMemosDialog
 import com.example.ui.theme.*
 import java.net.URLEncoder
 import java.text.NumberFormat
@@ -55,9 +56,11 @@ fun KhataBookScreen(
     val allCustomers by viewModel.allKhataCustomers.collectAsState()
     val allTransactions by viewModel.allKhataTransactions.collectAsState()
     val selectedCustomerTransactions by viewModel.selectedCustomerTransactions.collectAsState()
+    val allKhataMemos by viewModel.allKhataMemos.collectAsState()
     val inventoryItems by viewModel.allInventoryItems.collectAsState()
     val context = LocalContext.current
 
+    var stickyNoteInput by remember { mutableStateOf("") }
     val todayDateStr = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
 
     // Map customerId -> List of recent distinct items/notes purchased by that customer
@@ -197,16 +200,51 @@ fun KhataBookScreen(
                                 )
                             }
 
-                            Button(
-                                onClick = { viewModel.openAddKhataCustomer() },
-                                colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                modifier = Modifier.height(34.dp).testTag("add_customer_btn")
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Add Account", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                // Notification Bell / Memos Center
+                                BadgedBox(
+                                    badge = {
+                                        if (allKhataMemos.isNotEmpty()) {
+                                            Badge(
+                                                containerColor = WayStockDanger,
+                                                contentColor = Color.White
+                                            ) {
+                                                Text("${allKhataMemos.size}", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    IconButton(
+                                        onClick = { viewModel.setKhataMemosOpen(true) },
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFF1F5F9))
+                                            .testTag("khata_memos_btn")
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Notifications,
+                                            contentDescription = "Khata Notifications",
+                                            tint = if (allKhataMemos.isNotEmpty()) WayStockPrimary else WayStockTextSec,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                                Button(
+                                    onClick = { viewModel.openAddKhataCustomer() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.height(36.dp).testTag("add_customer_btn")
+                                ) {
+                                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Add Account", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
                         }
 
@@ -294,31 +332,64 @@ fun KhataBookScreen(
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // Search Bar
-                        OutlinedTextField(
-                            value = uiState.khataSearchQuery,
-                            onValueChange = { viewModel.setKhataSearchQuery(it) },
-                            placeholder = { Text("Search by name, phone or address...", fontSize = 12.5.sp, color = WayStockTextSec) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WayStockTextSec, modifier = Modifier.size(18.dp)) },
-                            trailingIcon = {
-                                if (uiState.khataSearchQuery.isNotBlank()) {
-                                    IconButton(onClick = { viewModel.setKhataSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear", tint = WayStockTextSec, modifier = Modifier.size(16.dp))
-                                    }
-                                }
-                            },
+                        // Clean Unclipped Search Bar
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(42.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = WayStockPrimary,
-                                unfocusedBorderColor = WayStockBorder,
-                                focusedContainerColor = Color(0xFFF8FAFC),
-                                unfocusedContainerColor = Color(0xFFF8FAFC)
-                            ),
-                            singleLine = true
-                        )
+                                .height(44.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFF8FAFC),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, WayStockBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = WayStockTextSec,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                androidx.compose.foundation.text.BasicTextField(
+                                    value = uiState.khataSearchQuery,
+                                    onValueChange = { viewModel.setKhataSearchQuery(it) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    textStyle = androidx.compose.ui.text.TextStyle(
+                                        fontSize = 13.sp,
+                                        color = WayStockDark,
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    decorationBox = { innerTextField ->
+                                        if (uiState.khataSearchQuery.isEmpty()) {
+                                            Text(
+                                                "Search by name, phone or address...",
+                                                fontSize = 12.5.sp,
+                                                color = WayStockTextSec
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                )
+                                if (uiState.khataSearchQuery.isNotBlank()) {
+                                    IconButton(
+                                        onClick = { viewModel.setKhataSearchQuery("") },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Clear",
+                                            tint = WayStockTextSec,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(6.dp))
 
@@ -380,7 +451,8 @@ fun KhataBookScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .weight(1f)
+                            .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -406,7 +478,107 @@ fun KhataBookScreen(
                         }
                     }
                 }
+
+                // Sticky Bottom Input Bar: Quick Ledger Memo / Reminder (Toggleable)
+                androidx.compose.animation.AnimatedVisibility(visible = uiState.isStickyBottomMemoBarEnabled) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White,
+                        shadowElevation = 8.dp,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color(0xFFF1F5F9),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, WayStockBorder)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.StickyNote2,
+                                        contentDescription = null,
+                                        tint = WayStockPrimary,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    androidx.compose.foundation.text.BasicTextField(
+                                        value = stickyNoteInput,
+                                        onValueChange = { stickyNoteInput = it },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        textStyle = androidx.compose.ui.text.TextStyle(
+                                            fontSize = 12.5.sp,
+                                            color = WayStockDark,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        decorationBox = { innerTextField ->
+                                            if (stickyNoteInput.isEmpty()) {
+                                                Text(
+                                                    "Quick memo / payment reminder...",
+                                                    fontSize = 12.sp,
+                                                    color = WayStockTextSec
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            IconButton(
+                                onClick = {
+                                    if (stickyNoteInput.isNotBlank()) {
+                                        viewModel.addKhataMemo(stickyNoteInput)
+                                        stickyNoteInput = ""
+                                    }
+                                },
+                                enabled = stickyNoteInput.isNotBlank(),
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(if (stickyNoteInput.isNotBlank()) WayStockPrimary else Color(0xFFE2E8F0))
+                            ) {
+                                Icon(
+                                    Icons.Default.Send,
+                                    contentDescription = "Send Note",
+                                    tint = if (stickyNoteInput.isNotBlank()) Color.White else WayStockTextSec,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        // Khata Notifications & Memos Dialog
+        if (uiState.isKhataMemosOpen) {
+            KhataMemosDialog(
+                memos = allKhataMemos,
+                isStickyBottomMemoBarEnabled = uiState.isStickyBottomMemoBarEnabled,
+                onToggleStickyBottomMemoBar = { viewModel.toggleStickyBottomMemoBar(it) },
+                isStickyNotificationEnabled = uiState.isKhataStickyNotificationEnabled,
+                onToggleStickyNotification = { viewModel.toggleKhataStickyNotification(it) },
+                onDismiss = { viewModel.setKhataMemosOpen(false) },
+                onDeleteMemo = { id -> viewModel.deleteKhataMemo(id) },
+                onClearAll = { viewModel.clearAllKhataMemos() },
+                onAddMemo = { note -> viewModel.addKhataMemo(note) }
+            )
         }
 
         // Add / Edit Customer Dialog

@@ -29,6 +29,7 @@ import com.example.data.AttendanceRecordEntity
 import com.example.data.StaffMemberEntity
 import com.example.service.AttendanceActionReceiver
 import com.example.ui.WayStockViewModel
+import com.example.ui.util.AttendanceReportImageGenerator
 import com.example.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -515,7 +516,35 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                         }
                     }
 
-                    // Option 2: Daily Attendance Report (Selected Day)
+                    // Option 1: Generate Attendance Roster as Photo / Image (With Full Staff Names)
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                AttendanceReportImageGenerator.generateAndShareRosterImage(
+                                    context = context,
+                                    selectedDateStr = uiState.selectedAttendanceDate,
+                                    displayDateStr = displayDateStr,
+                                    allStaff = allStaff,
+                                    attendanceList = dailyAttendance
+                                )
+                                showShareMasterDialog = false
+                            },
+                        color = Color(0xFFEFF6FF),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF93C5FD))
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Image, contentDescription = null, tint = WayStockPrimary, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("🖼️ Generate & Share Roster Image", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockPrimary)
+                                Text("Exports high-res graphic roster with all staff names, presence status & times", fontSize = 11.sp, color = WayStockTextSec)
+                            }
+                        }
+                    }
+
+                    // Option 2: Daily Attendance Report as Text (With Full Staff Names)
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -524,7 +553,7 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                                 val dailyReport = buildString {
                                     append("══════════════════════════════\n")
                                     append("     🏢 *WAYSTOCK ENTERPRISE*\n")
-                                    append("    *DAILY ATTENDANCE LOG*\n")
+                                    append("    *DAILY ATTENDANCE ROSTER*\n")
                                     append("══════════════════════════════\n\n")
                                     append("📅 *Date:* $displayDateStr\n\n")
                                     append("📊 *DAILY STATS:*\n")
@@ -533,7 +562,7 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                                     append("• Half-Day: $halfDayCount 🟡\n")
                                     append("• Absent: $absentCount 🔴\n")
                                     append("• Leave: $leaveCount 🔵\n\n")
-                                    append("👥 *PRESENT / ACTIVE ROSTER:*\n")
+                                    append("👥 *AVAILABLE STAFF MEMBERS LIST:*\n")
                                     append("──────────────────────────────\n")
                                     allStaff.forEachIndexed { index, s ->
                                         val rec = dailyAttendance.find { it.staffId == s.id }
@@ -547,7 +576,7 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                                             "Paid Leave" -> "🔵"
                                             else -> "⏳"
                                         }
-                                        append("${index + 1}. *${s.name}* (${s.role})\n")
+                                        append("${index + 1}. *${s.name}* (${s.role.ifBlank { "Staff" }})\n")
                                         append("   $icon Status: *$st*$inTime$note\n")
                                     }
                                     append("══════════════════════════════\n")
@@ -568,8 +597,8 @@ fun StaffAttendanceScreen(viewModel: WayStockViewModel) {
                             Icon(Icons.Default.Today, contentDescription = null, tint = WayStockDark, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
-                                Text("📅 Daily Attendance Roster", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                                Text("Daily presence roster with check-in time and notes for selected date", fontSize = 11.sp, color = WayStockTextSec)
+                                Text("📋 Share Roster as Text (With Names)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                                Text("Sends complete WhatsApp text list with names, roles & statuses", fontSize = 11.sp, color = WayStockTextSec)
                             }
                         }
                     }

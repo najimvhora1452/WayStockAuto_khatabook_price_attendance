@@ -36,6 +36,7 @@ class AdminAuthManager(private val context: Context) {
         private const val KEY_LOCAL_USER_NAME = "local_user_name"
         private const val KEY_LOCAL_USER_ID = "local_user_id"
         private const val KEY_LOCAL_IS_ONBOARDED = "local_is_onboarded"
+        private const val KEY_STICKY_MEMO_BAR_ENABLED = "sticky_memo_bar_enabled"
         private const val TAG = "AdminAuthManager"
     }
 
@@ -82,6 +83,14 @@ class AdminAuthManager(private val context: Context) {
         val email = prefs.getString(KEY_LOCAL_ADMIN_EMAIL, null)
         val name = prefs.getString(KEY_LOCAL_ADMIN_NAME, null)
         return Pair(email, name)
+    }
+
+    fun isStickyBottomMemoBarEnabled(): Boolean {
+        return prefs.getBoolean(KEY_STICKY_MEMO_BAR_ENABLED, true)
+    }
+
+    fun setStickyBottomMemoBarEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_STICKY_MEMO_BAR_ENABLED, enabled).apply()
     }
 
     private fun getFirestoreInstance(): FirebaseFirestore? {
