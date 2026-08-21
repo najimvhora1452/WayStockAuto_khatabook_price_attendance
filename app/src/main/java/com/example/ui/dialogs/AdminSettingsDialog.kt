@@ -77,6 +77,7 @@ fun AdminSettingsDialog(
     var isAutoLaunchSectionOpen by remember { mutableStateOf(true) }
     var isManageDevicesOpen by remember { mutableStateOf(isSuperAdmin) }
     var isBroadcastOpen by remember { mutableStateOf(false) }
+    var isStickyControlsSectionOpen by remember { mutableStateOf(false) }
     var isRequestedItemsOpen by remember { mutableStateOf(userRequestedItems.isNotEmpty()) }
 
     var oldPinInput by remember { mutableStateOf("") }
@@ -237,9 +238,24 @@ fun AdminSettingsDialog(
 
                                      Button(
                                         onClick = {
-                                            showGoogleAccountChooser = true
+                                            if (adminAuthManager != null) {
+                                                onGoogleLoginLoading(true)
+                                                coroutineScope.launch {
+                                                    val result = adminAuthManager.signInWithGoogle(context)
+                                                    onGoogleLoginLoading(false)
+                                                    if (result.isSuccess) {
+                                                        val (email, name) = result.getOrThrow()
+                                                        onGoogleLoginSuccess(email, name)
+                                                    } else {
+                                                        // If on emulator/no account popup, show standard account dialog
+                                                        showGoogleAccountChooser = true
+                                                    }
+                                                }
+                                            } else {
+                                                showGoogleAccountChooser = true
+                                            }
                                         },
-                                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                                        modifier = Modifier.fillMaxWidth().height(46.dp),
                                         shape = RoundedCornerShape(10.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B))
                                     ) {
@@ -247,35 +263,10 @@ fun AdminSettingsDialog(
                                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                                         } else {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("G", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF4285F4))
+                                                Text("G", fontSize = 17.sp, fontWeight = FontWeight.Black, color = Color(0xFF4285F4))
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Choose Google Account", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text("Sign in with Google", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                             }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // Instant One-Tap Super Admin Authentication without showing email
-                                    OutlinedButton(
-                                        onClick = {
-                                            if (adminAuthManager != null) {
-                                                val superAdmin = adminAuthManager.directSuperAdminLogin()
-                                                onGoogleLoginSuccess(superAdmin.first, superAdmin.second)
-                                            }
-                                        },
-                                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = Color(0xFFB45309),
-                                            containerColor = Color(0xFFFFFBEB)
-                                        ),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A))
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text("👑", fontSize = 14.sp)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Super Admin Quick Connect", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
 
@@ -736,7 +727,7 @@ fun AdminSettingsDialog(
                     }
                 }
 
-                // 5. Sticky Bar & Notification Preferences Card
+                // 5. Sticky Bar & Notification Preferences Card (Dropdown Accordion)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -745,73 +736,88 @@ fun AdminSettingsDialog(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isStickyControlsSectionOpen = !isStickyControlsSectionOpen },
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFFFEF3C7),
-                                modifier = Modifier.size(36.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Tune, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(18.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFFFEF3C7),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Tune, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("📌 Sticky Bar & Notification Controls", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                                    Text("Quick memo bar & status bar shortcuts", fontSize = 11.sp, color = WayStockTextSec)
                                 }
                             }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("📌 Sticky Bar & Notification Controls", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                                Text("Quick memo bar and phone status bar shortcut", fontSize = 11.sp, color = WayStockTextSec)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Toggle 1: Bottom Quick Memo Bar
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF8FAFC), RoundedCornerShape(10.dp))
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("📌 Khata Bottom Quick Memo Bar", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = WayStockDark)
-                                Text("Show/hide quick input bar at bottom of customer list", fontSize = 11.sp, color = WayStockTextSec)
-                            }
-                            Switch(
-                                checked = isStickyBottomMemoBarEnabled,
-                                onCheckedChange = onToggleStickyBottomMemoBar,
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = WayStockPrimary
-                                )
+                            Icon(
+                                imageVector = if (isStickyControlsSectionOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Toggle Section",
+                                tint = WayStockTextSec
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        AnimatedVisibility(visible = isStickyControlsSectionOpen) {
+                            Column(modifier = Modifier.padding(top = 14.dp)) {
+                                // Toggle 1: Bottom Quick Memo Bar
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFFF8FAFC), RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("📌 Khata Bottom Quick Memo Bar", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = WayStockDark)
+                                        Text("Show/hide quick input bar at bottom of customer list", fontSize = 11.sp, color = WayStockTextSec)
+                                    }
+                                    Switch(
+                                        checked = isStickyBottomMemoBarEnabled,
+                                        onCheckedChange = onToggleStickyBottomMemoBar,
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = WayStockPrimary
+                                        )
+                                    )
+                                }
 
-                        // Toggle 2: Phone Status Bar Sticky Notification Bar
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF8FAFC), RoundedCornerShape(10.dp))
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("🔔 Phone Status Bar Notification", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = WayStockDark)
-                                Text("Persistent notification bar for 1-tap entry from anywhere", fontSize = 11.sp, color = WayStockTextSec)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Toggle 2: Phone Status Bar Sticky Notification Bar
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFFF8FAFC), RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("🔔 Phone Status Bar Notification", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = WayStockDark)
+                                        Text("Persistent notification bar for 1-tap entry from anywhere", fontSize = 11.sp, color = WayStockTextSec)
+                                    }
+                                    Switch(
+                                        checked = isStickyNotificationEnabled,
+                                        onCheckedChange = onToggleStickyNotification,
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFF10B981)
+                                        )
+                                    )
+                                }
                             }
-                            Switch(
-                                checked = isStickyNotificationEnabled,
-                                onCheckedChange = onToggleStickyNotification,
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Color(0xFF10B981)
-                                )
-                            )
                         }
                     }
                 }
@@ -1025,10 +1031,6 @@ fun AdminSettingsDialog(
                                             if (result.isSuccess) {
                                                 val (email, name) = result.getOrThrow()
                                                 onGoogleLoginSuccess(email, name)
-                                            } else {
-                                                // Fallback
-                                                val superAdmin = adminAuthManager.directSuperAdminLogin()
-                                                onGoogleLoginSuccess(superAdmin.first, superAdmin.second)
                                             }
                                         }
                                     }
@@ -1049,44 +1051,11 @@ fun AdminSettingsDialog(
                             }
                         }
 
-                        // 2. Primary Owner Account Option (Najim Vhora)
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    showGoogleAccountChooser = false
-                                    onGoogleLoginSuccess("najimvhora1452@gmail.com", "Najim Vhora (Owner)")
-                                },
-                            color = Color(0xFFEFF6FF),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFF2563EB),
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text("N", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text("najimvhora1452@gmail.com", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A))
-                                    Text("Najim Vhora • Master Owner", fontSize = 10.5.sp, color = WayStockTextSec)
-                                }
-                            }
-                        }
-
-                        // 3. Custom Google Account Entry
+                        // 2. Custom Google Account Entry
                         OutlinedTextField(
                             value = customGoogleEmailInput,
                             onValueChange = { customGoogleEmailInput = it },
-                            placeholder = { Text("Or enter other Google email...", fontSize = 12.sp) },
+                            placeholder = { Text("Or enter Google email...", fontSize = 12.sp) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),

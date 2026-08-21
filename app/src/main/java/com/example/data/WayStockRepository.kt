@@ -178,10 +178,21 @@ class WayStockRepository(context: Context) {
     // Khata Quick Memos & Notifications
     val allKhataMemos: Flow<List<KhataMemoEntity>> = dao.getAllKhataMemosFlow()
 
-    suspend fun insertKhataMemo(note: String) {
+    suspend fun insertOrUpdateKhataTransactionDirect(txn: KhataTransactionEntity) {
+        dao.insertOrUpdateKhataTransaction(txn)
+    }
+
+    suspend fun insertKhataMemoDirect(memo: KhataMemoEntity) {
+        dao.insertKhataMemo(memo)
+    }
+
+    suspend fun insertKhataMemo(note: String): Long {
         if (note.isNotBlank()) {
-            dao.insertKhataMemo(KhataMemoEntity(note = note.trim()))
+            val memo = KhataMemoEntity(note = note.trim())
+            dao.insertKhataMemo(memo)
+            return memo.id
         }
+        return 0L
     }
 
     suspend fun deleteKhataMemo(id: Long) = dao.deleteKhataMemo(id)

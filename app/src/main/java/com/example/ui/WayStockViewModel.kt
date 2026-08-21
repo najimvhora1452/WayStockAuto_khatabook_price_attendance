@@ -68,6 +68,7 @@ data class WayStockUiState(
 class WayStockViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = WayStockRepository(application)
     val adminAuthManager = AdminAuthManager(application)
+    val khataCloudManager = com.example.data.KhataCloudManager(application, repository)
 
     private val _uiState = MutableStateFlow(WayStockUiState())
     val uiState: StateFlow<WayStockUiState> = _uiState.asStateFlow()
@@ -140,6 +141,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
             repository.seedDefaultStaffIfEmpty()
             repository.seedDefaultKhataIfEmpty()
             syncFolderAndItemTypes()
+            khataCloudManager.startRealtimeSync()
         }
 
         // Restore local user profile if already onboarded
@@ -1450,6 +1452,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 updatedAt = System.currentTimeMillis()
             )
             repository.insertOrUpdateKhataCustomer(customer)
+            khataCloudManager.uploadCustomerToCloud(customer)
             closeAddKhataCustomer()
 
             // If we are editing currently open detail, update state
@@ -1457,17 +1460,18 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 _uiState.update { it.copy(selectedKhataCustomer = customer) }
             }
 
-            showAlert("📒 Customer '${customer.name}' saved successfully", "success")
+            showAlert("📒 Customer '${customer.name}' saved to Cloud!", "success")
         }
     }
 
     fun deleteKhataCustomer(customerId: String) {
         viewModelScope.launch {
             repository.deleteKhataCustomer(customerId)
+            khataCloudManager.deleteCustomerFromCloud(customerId)
             if (_uiState.value.selectedKhataCustomer?.id == customerId) {
                 closeKhataDetail()
             }
-            showAlert("🗑️ Customer and ledger transactions deleted.", "info")
+            showAlert("🗑️ Customer and ledger transactions deleted from Cloud.", "info")
         }
     }
 
@@ -1488,8 +1492,6 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
             val cleanBill = billNumber.trim()
 
             // Smart 1-Minute Same Item Entry Auto-Multiplier Merge Logic:
-            // If user records the same item / note for the same customer within 1 minute (60,000 ms),
-            // merge them into a single entry e.g. "2x Thumsup" instead of two separate lines!
             val latestTxn = repository.getLatestTransactionForCustomer(customerId)
             var merged = false
 
@@ -1498,7 +1500,6 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 (nowMs - latestTxn.timestamp) <= 60000L &&
                 latestTxn.date == date
             ) {
-                // Extract base name without existing multiplier (e.g. "2x Thumsup" -> "Thumsup", "1x Thumsup" -> "Thumsup")
                 val extractBaseAndQty = { raw: String ->
                     val match = Regex("""^(\d+)\s*[xX×]\s*(.+)$""").find(raw.trim())
                     if (match != null) {
@@ -1518,8 +1519,9 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                     val updatedNote = "${combinedQty}× $latestBase"
                     val updatedAmount = latestTxn.amount + amount
 
-                    // First delete old transaction from ledger balance
+                    // First delete old transaction from ledger balance & cloud
                     repository.deleteKhataTransaction(latestTxn)
+                    khataCloudManager.deleteTransactionFromCloud(latestTxn.id)
 
                     // Insert the unified multiplied transaction
                     val mergedTxn = latestTxn.copy(
@@ -1529,16 +1531,19 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                         time = time
                     )
                     repository.addKhataTransaction(mergedTxn)
+                    khataCloudManager.uploadTransactionToCloud(mergedTxn)
                     merged = true
 
                     val updatedCustomer = repository.getKhataCustomerById(customerId)
-                    if (updatedCustomer != null && _uiState.value.selectedKhataCustomer?.id == customerId) {
-                        _uiState.update { it.copy(selectedKhataCustomer = updatedCustomer) }
+                    if (updatedCustomer != null) {
+                        khataCloudManager.uploadCustomerToCloud(updatedCustomer)
+                        if (_uiState.value.selectedKhataCustomer?.id == customerId) {
+                            _uiState.update { it.copy(selectedKhataCustomer = updatedCustomer) }
+                        }
                     }
 
                     closeAddKhataTxn()
-                    val actionVerb = if (type == "GAVE") "Udhar" else "Jama"
-                    showAlert("⚡ Auto-Merged into '$updatedNote' (Total: ₹${updatedAmount.toInt()}) for $customerName", "success")
+                    showAlert("⚡ Auto-Merged into '$updatedNote' (Total: ₹${updatedAmount.toInt()}) in Cloud", "success")
                 }
             }
 
@@ -1557,16 +1562,20 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                     timestamp = nowMs
                 )
                 repository.addKhataTransaction(txn)
+                khataCloudManager.uploadTransactionToCloud(txn)
 
-                // Refresh selected customer state
+                // Refresh selected customer state and sync updated balance to cloud
                 val updated = repository.getKhataCustomerById(customerId)
-                if (updated != null && _uiState.value.selectedKhataCustomer?.id == customerId) {
-                    _uiState.update { it.copy(selectedKhataCustomer = updated) }
+                if (updated != null) {
+                    khataCloudManager.uploadCustomerToCloud(updated)
+                    if (_uiState.value.selectedKhataCustomer?.id == customerId) {
+                        _uiState.update { it.copy(selectedKhataCustomer = updated) }
+                    }
                 }
 
                 closeAddKhataTxn()
                 val actionLabel = if (type == "GAVE") "Udhar (Diya ₹$amount)" else "Jama (Mila ₹$amount)"
-                showAlert("✅ $actionLabel recorded for $customerName", "success")
+                showAlert("✅ $actionLabel synced to Cloud for $customerName", "success")
             }
         }
     }
@@ -1574,11 +1583,15 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
     fun deleteKhataTransaction(txn: com.example.data.KhataTransactionEntity) {
         viewModelScope.launch {
             repository.deleteKhataTransaction(txn)
+            khataCloudManager.deleteTransactionFromCloud(txn.id)
             val updated = repository.getKhataCustomerById(txn.customerId)
-            if (updated != null && _uiState.value.selectedKhataCustomer?.id == txn.customerId) {
-                _uiState.update { it.copy(selectedKhataCustomer = updated) }
+            if (updated != null) {
+                khataCloudManager.uploadCustomerToCloud(updated)
+                if (_uiState.value.selectedKhataCustomer?.id == txn.customerId) {
+                    _uiState.update { it.copy(selectedKhataCustomer = updated) }
+                }
             }
-            showAlert("🗑️ Transaction removed.", "info")
+            showAlert("🗑️ Transaction removed from Cloud.", "info")
         }
     }
 
@@ -1712,14 +1725,17 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
     fun addKhataMemo(note: String) {
         if (note.isBlank()) return
         viewModelScope.launch {
-            repository.insertKhataMemo(note.trim())
-            showAlert("✅ Note added to Khata Notifications!", "success")
+            val memoId = repository.insertKhataMemo(note.trim())
+            val memo = com.example.data.KhataMemoEntity(id = memoId, note = note.trim(), timestamp = System.currentTimeMillis())
+            khataCloudManager.uploadMemoToCloud(memo)
+            showAlert("✅ Saved note to App Database & Cloud!", "success")
         }
     }
 
     fun deleteKhataMemo(id: Long) {
         viewModelScope.launch {
             repository.deleteKhataMemo(id)
+            khataCloudManager.deleteMemoFromCloud(id)
             showAlert("🗑️ Notification removed", "info")
         }
     }

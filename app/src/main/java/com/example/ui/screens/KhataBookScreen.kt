@@ -479,87 +479,89 @@ fun KhataBookScreen(
                     }
                 }
 
-                // Sticky Bottom Input Bar: Quick Ledger Memo / Reminder (Toggleable)
-                androidx.compose.animation.AnimatedVisibility(visible = uiState.isStickyBottomMemoBarEnabled) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color.White,
-                        shadowElevation = 8.dp,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                // Simplified Sticky Bottom Input Bar: Text Input + Small Send Button to save in DB
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .imePadding()
+                        .navigationBarsPadding(),
+                    color = Color.White,
+                    shadowElevation = 6.dp,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
+                        Surface(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(21.dp),
+                            color = Color(0xFFF1F5F9),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1))
                         ) {
-                            Surface(
+                            androidx.compose.foundation.text.BasicTextField(
+                                value = stickyNoteInput,
+                                onValueChange = { stickyNoteInput = it },
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .height(40.dp),
-                                shape = RoundedCornerShape(20.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, WayStockBorder)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.StickyNote2,
-                                        contentDescription = null,
-                                        tint = WayStockPrimary,
-                                        modifier = Modifier.size(17.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    androidx.compose.foundation.text.BasicTextField(
-                                        value = stickyNoteInput,
-                                        onValueChange = { stickyNoteInput = it },
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true,
-                                        textStyle = androidx.compose.ui.text.TextStyle(
-                                            fontSize = 12.5.sp,
-                                            color = WayStockDark,
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        decorationBox = { innerTextField ->
-                                            if (stickyNoteInput.isEmpty()) {
-                                                Text(
-                                                    "Quick memo / payment reminder...",
-                                                    fontSize = 12.sp,
-                                                    color = WayStockTextSec
-                                                )
-                                            }
-                                            innerTextField()
+                                    .fillMaxSize()
+                                    .padding(horizontal = 14.dp, vertical = 11.dp)
+                                    .testTag("khata_sticky_input"),
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    imeAction = androidx.compose.ui.text.input.ImeAction.Send
+                                ),
+                                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                                    onSend = {
+                                        if (stickyNoteInput.isNotBlank()) {
+                                            viewModel.addKhataMemo(stickyNoteInput)
+                                            stickyNoteInput = ""
                                         }
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            IconButton(
-                                onClick = {
-                                    if (stickyNoteInput.isNotBlank()) {
-                                        viewModel.addKhataMemo(stickyNoteInput)
-                                        stickyNoteInput = ""
                                     }
-                                },
-                                enabled = stickyNoteInput.isNotBlank(),
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(if (stickyNoteInput.isNotBlank()) WayStockPrimary else Color(0xFFE2E8F0))
-                            ) {
-                                Icon(
-                                    Icons.Default.Send,
-                                    contentDescription = "Send Note",
-                                    tint = if (stickyNoteInput.isNotBlank()) Color.White else WayStockTextSec,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                                ),
+                                textStyle = androidx.compose.ui.text.TextStyle(
+                                    fontSize = 13.sp,
+                                    color = WayStockDark,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                decorationBox = { innerTextField ->
+                                    if (stickyNoteInput.isEmpty()) {
+                                        Text(
+                                            "Type text to save in database...",
+                                            fontSize = 12.5.sp,
+                                            color = WayStockTextSec
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = {
+                                if (stickyNoteInput.isNotBlank()) {
+                                    viewModel.addKhataMemo(stickyNoteInput)
+                                    stickyNoteInput = ""
+                                }
+                            },
+                            enabled = stickyNoteInput.isNotBlank(),
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(if (stickyNoteInput.isNotBlank()) WayStockPrimary else Color(0xFFE2E8F0))
+                                .testTag("khata_sticky_send_btn")
+                        ) {
+                            Icon(
+                                Icons.Default.Send,
+                                contentDescription = "Save to Database",
+                                tint = if (stickyNoteInput.isNotBlank()) Color.White else WayStockTextSec,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
