@@ -106,8 +106,9 @@ fun AdminSettingsDialog(
         }
     }
 
-    var showGoogleAccountChooser by remember { mutableStateOf(false) }
-    var customGoogleEmailInput by remember { mutableStateOf("") }
+    var authErrorMessage by remember { mutableStateOf<String?>(null) }
+    var deviceGoogleAccounts by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showDeviceAccountPicker by remember { mutableStateOf(false) }
 
     // Intercept hardware and gesture back navigation to return to Admin Home
     BackHandler {
@@ -247,12 +248,17 @@ fun AdminSettingsDialog(
                                                         val (email, name) = result.getOrThrow()
                                                         onGoogleLoginSuccess(email, name)
                                                     } else {
-                                                        // If on emulator/no account popup, show standard account dialog
-                                                        showGoogleAccountChooser = true
+                                                        // Check if real Google accounts exist on the Android device
+                                                        val accounts = adminAuthManager.getDeviceGoogleAccounts(context)
+                                                        if (accounts.isNotEmpty()) {
+                                                            deviceGoogleAccounts = accounts
+                                                            showDeviceAccountPicker = true
+                                                        } else {
+                                                            val err = result.exceptionOrNull()?.message ?: "Google Sign-In service not ready on this device"
+                                                            authErrorMessage = err
+                                                        }
                                                     }
                                                 }
-                                            } else {
-                                                showGoogleAccountChooser = true
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -995,94 +1001,110 @@ fun AdminSettingsDialog(
             )
         }
 
-        // Render Google Account Chooser Dialog
-        if (showGoogleAccountChooser) {
+        // Render On-Device Google Account Picker (shows actual Google accounts verified on phone)
+        if (showDeviceAccountPicker && deviceGoogleAccounts.isNotEmpty()) {
             AlertDialog(
-                onDismissRequest = { showGoogleAccountChooser = false },
+                onDismissRequest = { showDeviceAccountPicker = false },
                 shape = RoundedCornerShape(18.dp),
                 containerColor = Color.White,
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("G", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF4285F4))
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text("Choose Google Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                        Text("Select Google Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
                     }
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Select a Google account to login as Admin on this device:",
+                            "The following verified Google accounts are signed in on this device. Select one to proceed:",
                             fontSize = 12.sp,
                             color = WayStockTextSec
                         )
-
-                        // 1. Device Google Account Selector (calls Android Credential Manager account picker)
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    showGoogleAccountChooser = false
-                                    if (adminAuthManager != null) {
-                                        onGoogleLoginLoading(true)
-                                        coroutineScope.launch {
-                                            val result = adminAuthManager.signInWithGoogle(context)
-                                            onGoogleLoginLoading(false)
-                                            if (result.isSuccess) {
-                                                val (email, name) = result.getOrThrow()
-                                                onGoogleLoginSuccess(email, name)
-                                            }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        deviceGoogleAccounts.forEach { accEmail ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable {
+                                        showDeviceAccountPicker = false
+                                        val name = accEmail.substringBefore("@").replace(".", " ").capitalize(Locale.ROOT)
+                                        onGoogleLoginSuccess(accEmail, name)
+                                    },
+                                color = Color(0xFFF1F5F9),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF4285F4),
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                accEmail.take(1).uppercase(Locale.ROOT),
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
                                         }
                                     }
-                                },
-                            color = Color(0xFFF1F5F9),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, WayStockBorder)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = WayStockPrimary, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text("Pick from Device Accounts", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
-                                    Text("Shows all Google accounts synced on this phone", fontSize = 10.5.sp, color = WayStockTextSec)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(accEmail, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                                        Text("Device Account", fontSize = 10.5.sp, color = WayStockTextSec)
+                                    }
                                 }
-                            }
-                        }
-
-                        // 2. Custom Google Account Entry
-                        OutlinedTextField(
-                            value = customGoogleEmailInput,
-                            onValueChange = { customGoogleEmailInput = it },
-                            placeholder = { Text("Or enter Google email...", fontSize = 12.sp) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.5.sp)
-                        )
-
-                        if (customGoogleEmailInput.isNotBlank() && customGoogleEmailInput.contains("@")) {
-                            Button(
-                                onClick = {
-                                    showGoogleAccountChooser = false
-                                    val cleanEmail = customGoogleEmailInput.trim().lowercase()
-                                    val name = cleanEmail.substringBefore("@").replace(".", " ").capitalize(Locale.ROOT)
-                                    onGoogleLoginSuccess(cleanEmail, name)
-                                },
-                                modifier = Modifier.fillMaxWidth().height(38.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
-                            ) {
-                                Text("Continue with $customGoogleEmailInput", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 },
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = { showGoogleAccountChooser = false }) {
+                    TextButton(onClick = { showDeviceAccountPicker = false }) {
                         Text("Cancel", color = WayStockTextSec)
+                    }
+                }
+            )
+        }
+
+        // Render Auth Error / Notice Dialog
+        authErrorMessage?.let { errText ->
+            AlertDialog(
+                onDismissRequest = { authErrorMessage = null },
+                shape = RoundedCornerShape(18.dp),
+                containerColor = Color.White,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("⚠️", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Sign-In Notice", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = errText,
+                            fontSize = 12.5.sp,
+                            color = WayStockTextSec
+                        )
+                        Text(
+                            text = "Tip: You can configure your Google Client ID or use your Master Security PIN (1234) for instant offline & online Super Admin access.",
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF0284C7)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { authErrorMessage = null },
+                        colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
+                    ) {
+                        Text("OK", color = Color.White)
                     }
                 }
             )

@@ -10,6 +10,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.RemoteInput
 import com.example.MainActivity
 import com.example.R
 import com.example.ui.screens.KhataQuickEntryActivity
@@ -17,6 +18,7 @@ import com.example.ui.screens.KhataQuickEntryActivity
 /**
  * Persistent Foreground Service that displays a sticky Notification Bar
  * for KhataBook Quick Search & 1-Tap Udhar/Advance Entries from anywhere in Android.
+ * Features an inline RemoteInput text field & Send button directly inside the Notification panel.
  */
 class KhataStickyNotificationService : Service() {
 
@@ -49,13 +51,26 @@ class KhataStickyNotificationService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Action 1: Search & Quick Add
-        val searchPendingIntent = PendingIntent.getActivity(
-            this,
-            202,
-            quickEntryIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        // Action 1: Direct Reply Inline Input Bar with Send Button
+        val remoteInput = RemoteInput.Builder(KhataNotificationActionReceiver.KEY_QUICK_MEMO_INPUT)
+            .setLabel("Type note / transaction...")
+            .build()
+
+        val replyIntent = Intent(this, KhataNotificationActionReceiver::class.java).apply {
+            action = KhataNotificationActionReceiver.ACTION_DIRECT_REPLY_KHATA_MEMO
+        }
+        val replyFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val replyPendingIntent = PendingIntent.getBroadcast(this, 101, replyIntent, replyFlags)
+
+        val quickInputAction = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_menu_send,
+            "✍️ Type Note & Send",
+            replyPendingIntent
+        ).addRemoteInput(remoteInput).build()
 
         // Action 2: Open Full Khata Book in App
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
@@ -82,13 +97,13 @@ class KhataStickyNotificationService : Service() {
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("⚡ KhataBook Quick Search & Entry")
-            .setContentText("Tap to search customer, view wallet balance or add 1-tap entry")
+            .setContentTitle("⚡ KhataBook Quick Bar")
+            .setContentText("Tap 'Type Note & Send' below to type & save memo")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setAutoCancel(false)
             .setContentIntent(quickEntryPendingIntent)
-            .addAction(android.R.drawable.ic_menu_search, "🔍 Search & Add", searchPendingIntent)
+            .addAction(quickInputAction)
             .addAction(android.R.drawable.ic_menu_agenda, "📒 Open Khata", openAppPendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "❌ Turn Off", stopPendingIntent)
             .build()

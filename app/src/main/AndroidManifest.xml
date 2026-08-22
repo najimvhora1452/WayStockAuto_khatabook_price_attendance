@@ -72,6 +72,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".service.KhataNotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.ACTION_DIRECT_REPLY_KHATA_MEMO" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

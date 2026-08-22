@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.example.ui.WayStockViewModel
 import com.example.ui.screens.MainInventoryScreen
 import com.example.ui.theme.WayStockTheme

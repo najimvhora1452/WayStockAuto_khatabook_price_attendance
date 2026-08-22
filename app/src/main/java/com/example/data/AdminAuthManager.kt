@@ -173,17 +173,32 @@ class AdminAuthManager(private val context: Context) {
 
                 Result.success(Pair(email, displayName))
             } else {
-                Result.failure(Exception("Unknown credential format"))
+                Result.failure(Exception("Unknown credential format received from Google Play Services."))
             }
         } catch (e: androidx.credentials.exceptions.NoCredentialException) {
-            Log.w(TAG, "No Google accounts found on this device/emulator: ${e.message}")
-            Result.failure(Exception("No Google account configured on device/emulator"))
+            Log.w(TAG, "No Google accounts found: ${e.message}")
+            Result.failure(Exception("No Google Account available in Credential Manager."))
         } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
             Log.i(TAG, "Google Sign-in cancelled by user")
-            Result.failure(Exception("Sign-in cancelled"))
+            Result.failure(Exception("Sign-in was cancelled."))
         } catch (e: Exception) {
-            Log.w(TAG, "Google Sign-in notice: ${e.message}")
-            Result.failure(e)
+            val msg = e.message ?: "Google Sign-In service not configured"
+            Log.w(TAG, "Google Sign-in notice: $msg")
+            Result.failure(Exception(msg))
+        }
+    }
+
+    /**
+     * Retrieves actual Google accounts synced on the Android device via AccountManager
+     */
+    fun getDeviceGoogleAccounts(activityContext: Context): List<String> {
+        return try {
+            val accountManager = android.accounts.AccountManager.get(activityContext)
+            val accounts = accountManager.getAccountsByType("com.google")
+            accounts.map { it.name }.filter { it.contains("@") }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error fetching device accounts: ${e.message}")
+            emptyList()
         }
     }
 
