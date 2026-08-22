@@ -240,7 +240,7 @@ fun AdminSettingsDialog(
                                     )
                                     Spacer(modifier = Modifier.height(10.dp))
 
-                                     Button(
+                                    Button(
                                         onClick = {
                                             if (adminAuthManager != null) {
                                                 onGoogleLoginLoading(true)
@@ -257,7 +257,7 @@ fun AdminSettingsDialog(
                                                             deviceGoogleAccounts = accounts
                                                             showDeviceAccountPicker = true
                                                         } else {
-                                                            val err = result.exceptionOrNull()?.message ?: "Google Sign-In service not ready on this device"
+                                                            val err = result.exceptionOrNull()?.message ?: "Google Play Services not available on this device."
                                                             authErrorMessage = err
                                                         }
                                                     }
@@ -1172,7 +1172,7 @@ fun AdminSettingsDialog(
                             color = WayStockTextSec
                         )
                         Text(
-                            text = "Tip: You can configure your Google Client ID or use your Master Security PIN (1234) for instant offline & online Super Admin access.",
+                            text = "Ensure Google Play Services is active on device and Google Sign-in provider is enabled in Firebase Console.",
                             fontSize = 11.5.sp,
                             color = Color(0xFF0284C7)
                         )

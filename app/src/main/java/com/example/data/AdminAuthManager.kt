@@ -25,7 +25,7 @@ import kotlinx.coroutines.tasks.await
 class AdminAuthManager(private val context: Context) {
 
     companion object {
-        const val SUPER_ADMIN_EMAIL = "najimvhora1452@gmail.com"
+        const val GOOGLE_WEB_CLIENT_ID = "520506980567-kr629f81llputqenh6aav7rhlpg2nouv.apps.googleusercontent.com"
         private const val SETTINGS_COLLECTION = "system_settings"
         private const val MASTER_CONFIG_DOC = "master_security"
         private const val ADMIN_DEVICES_COLLECTION = "admin_devices"
@@ -33,6 +33,7 @@ class AdminAuthManager(private val context: Context) {
         private const val KEY_LOCAL_AUTO_LAUNCH = "local_auto_launch_enabled"
         private const val KEY_LOCAL_ADMIN_EMAIL = "local_admin_email"
         private const val KEY_LOCAL_ADMIN_NAME = "local_admin_name"
+        private const val KEY_LOCAL_MASTER_EMAIL = "local_master_admin_email"
         private const val KEY_LOCAL_USER_NAME = "local_user_name"
         private const val KEY_LOCAL_USER_ID = "local_user_id"
         private const val KEY_LOCAL_IS_ONBOARDED = "local_is_onboarded"
@@ -128,8 +129,25 @@ class AdminAuthManager(private val context: Context) {
 
     val currentFirebaseUser get() = getAuthInstance()?.currentUser
 
+    fun getLocalMasterAdminEmail(): String {
+        return prefs.getString(KEY_LOCAL_MASTER_EMAIL, "") ?: ""
+    }
+
+    fun setLocalMasterAdminEmail(email: String) {
+        prefs.edit().putString(KEY_LOCAL_MASTER_EMAIL, email.trim()).apply()
+    }
+
     fun isSuperAdmin(email: String?): Boolean {
-        return email?.trim()?.equals(SUPER_ADMIN_EMAIL, ignoreCase = true) == true
+        if (email.isNullOrBlank()) return false
+        val localMaster = getLocalMasterAdminEmail()
+        if (localMaster.isNotBlank() && email.trim().equals(localMaster, ignoreCase = true)) {
+            return true
+        }
+        // If no master admin has been configured yet, allow the first authenticated admin
+        if (localMaster.isBlank()) {
+            return true
+        }
+        return false
     }
 
     /**
@@ -140,7 +158,7 @@ class AdminAuthManager(private val context: Context) {
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
                 .setAutoSelectEnabled(false)
-                .setServerClientId("43806944793-dummy.apps.googleusercontent.com")
+                .setServerClientId(GOOGLE_WEB_CLIENT_ID)
                 .build()
 
             val request = GetCredentialRequest.Builder()
@@ -177,12 +195,12 @@ class AdminAuthManager(private val context: Context) {
             }
         } catch (e: androidx.credentials.exceptions.NoCredentialException) {
             Log.w(TAG, "No Google accounts found: ${e.message}")
-            Result.failure(Exception("No Google Account available in Credential Manager."))
+            Result.failure(Exception("No Google Account found on this device."))
         } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
             Log.i(TAG, "Google Sign-in cancelled by user")
             Result.failure(Exception("Sign-in was cancelled."))
         } catch (e: Exception) {
-            val msg = e.message ?: "Google Sign-In service not configured"
+            val msg = e.message ?: "Google Sign-In service not ready"
             Log.w(TAG, "Google Sign-in notice: $msg")
             Result.failure(Exception(msg))
         }
@@ -200,13 +218,6 @@ class AdminAuthManager(private val context: Context) {
             Log.w(TAG, "Error fetching device accounts: ${e.message}")
             emptyList()
         }
-    }
-
-    /**
-     * Direct Super Admin Login (Instant bypass for testing/emulator)
-     */
-    fun directSuperAdminLogin(): Pair<String, String> {
-        return Pair(SUPER_ADMIN_EMAIL, "Master Administrator")
     }
 
     /**
@@ -233,11 +244,12 @@ class AdminAuthManager(private val context: Context) {
             val isStaffGlobal = prefs.getBoolean("global_staff_page", true)
             val isInvGlobal = prefs.getBoolean("global_inv_edit", true)
             val pin = prefs.getString("local_master_pin", "1234") ?: "1234"
+            val masterEmail = getLocalMasterAdminEmail()
             emit(
                 MasterSecurityConfig(
-                    masterAdminEmail = SUPER_ADMIN_EMAIL,
+                    masterAdminEmail = masterEmail,
                     masterPin = pin,
-                    lastModifiedBy = SUPER_ADMIN_EMAIL,
+                    lastModifiedBy = masterEmail,
                     lastModifiedAt = System.currentTimeMillis(),
                     isPricePageGlobalToPremium = isPriceGlobal,
                     isKhataGlobalToPremium = isKhataGlobal,
@@ -255,16 +267,22 @@ class AdminAuthManager(private val context: Context) {
                         return@addSnapshotListener
                     }
                     if (snapshot != null && snapshot.exists()) {
-                        val pin = snapshot.getString("masterPin") ?: "1234"
-                        val lastModBy = snapshot.getString("lastModifiedBy") ?: SUPER_ADMIN_EMAIL
+                        val pin = snapshot.getString("masterPin") ?: prefs.getString("local_master_pin", "1234") ?: "1234"
+                        val masterEmail = snapshot.getString("masterAdminEmail") ?: getLocalMasterAdminEmail()
+                        val lastModBy = snapshot.getString("lastModifiedBy") ?: masterEmail
                         val lastModAt = snapshot.getLong("lastModifiedAt") ?: 0L
                         val isPriceGlobal = snapshot.getBoolean("isPricePageGlobalToPremium") ?: false
                         val isKhataGlobal = snapshot.getBoolean("isKhataGlobalToPremium") ?: true
                         val isStaffGlobal = snapshot.getBoolean("isStaffGlobalToPremium") ?: true
                         val isInvGlobal = snapshot.getBoolean("isInventoryEditGlobalToPremium") ?: true
+
+                        if (masterEmail.isNotBlank()) {
+                            setLocalMasterAdminEmail(masterEmail)
+                        }
+
                         trySend(
                             MasterSecurityConfig(
-                                masterAdminEmail = SUPER_ADMIN_EMAIL,
+                                masterAdminEmail = masterEmail,
                                 masterPin = pin,
                                 lastModifiedBy = lastModBy,
                                 lastModifiedAt = lastModAt,
@@ -275,7 +293,7 @@ class AdminAuthManager(private val context: Context) {
                             )
                         )
                     } else {
-                        trySend(MasterSecurityConfig())
+                        trySend(MasterSecurityConfig(masterAdminEmail = getLocalMasterAdminEmail()))
                     }
                 }
             awaitClose { listener.remove() }
@@ -283,19 +301,22 @@ class AdminAuthManager(private val context: Context) {
     }
 
     /**
-     * Update master PIN - strictly allowed only if executed by Super Admin
+     * Update master PIN - allowed only by authorized Admin
      */
     suspend fun updateMasterPin(operatorEmail: String, newPin: String): Result<Boolean> {
         if (!isSuperAdmin(operatorEmail)) {
-            return Result.failure(SecurityException("Only Super Admin ($SUPER_ADMIN_EMAIL) can update the Master PIN!"))
+            return Result.failure(SecurityException("Only Master Administrator can update the Security PIN!"))
         }
 
         prefs.edit().putString("local_master_pin", newPin).apply()
+        if (operatorEmail.isNotBlank()) {
+            setLocalMasterAdminEmail(operatorEmail)
+        }
         val db = getFirestoreInstance() ?: return Result.success(true)
 
         return try {
             val data = mapOf(
-                "masterAdminEmail" to SUPER_ADMIN_EMAIL,
+                "masterAdminEmail" to operatorEmail.ifBlank { getLocalMasterAdminEmail() },
                 "masterPin" to newPin,
                 "lastModifiedBy" to operatorEmail,
                 "lastModifiedAt" to System.currentTimeMillis()
@@ -312,7 +333,7 @@ class AdminAuthManager(private val context: Context) {
     }
 
     /**
-     * Update Global Feature Broadcast - Super Admin toggles which features all Premium admins get
+     * Update Global Feature Broadcast - Admin toggles features
      */
     suspend fun updateGlobalFeatureConfig(
         operatorEmail: String,
@@ -322,7 +343,7 @@ class AdminAuthManager(private val context: Context) {
         isInventoryGlobal: Boolean
     ): Result<Boolean> {
         if (!isSuperAdmin(operatorEmail)) {
-            return Result.failure(SecurityException("Only Super Admin ($SUPER_ADMIN_EMAIL) can change global feature toggles!"))
+            return Result.failure(SecurityException("Only Master Administrator can change global feature toggles!"))
         }
 
         prefs.edit().apply {
@@ -360,40 +381,28 @@ class AdminAuthManager(private val context: Context) {
      */
     fun getAllAdminDevices(): Flow<List<AdminDeviceEntity>> {
         val db = getFirestoreInstance() ?: return flow {
-            // Local fallback seed so Super Admin and sample admins are visible
-            val superAdmin = AdminDeviceEntity(
-                email = SUPER_ADMIN_EMAIL,
-                displayName = "Najim Vhora",
-                isAutoLaunchEnabled = true,
-                registeredAt = System.currentTimeMillis() - 864000000L,
-                lastActiveAt = System.currentTimeMillis(),
-                isSuperAdmin = true,
-                permissions = AdminPermissions(
-                    canAccessPricePage = true,
-                    canManageInventory = true,
-                    canManageKhata = true,
-                    canManageStaff = true,
-                    canSendBroadcast = true,
-                    canExportReports = true
+            val localMaster = getLocalMasterAdminEmail()
+            if (localMaster.isNotBlank()) {
+                val superAdmin = AdminDeviceEntity(
+                    email = localMaster,
+                    displayName = "Master Administrator",
+                    isAutoLaunchEnabled = isLocalAutoLaunchEnabled(),
+                    registeredAt = System.currentTimeMillis(),
+                    lastActiveAt = System.currentTimeMillis(),
+                    isSuperAdmin = true,
+                    permissions = AdminPermissions(
+                        canAccessPricePage = true,
+                        canManageInventory = true,
+                        canManageKhata = true,
+                        canManageStaff = true,
+                        canSendBroadcast = true,
+                        canExportReports = true
+                    )
                 )
-            )
-            val staffAdmin = AdminDeviceEntity(
-                email = "rahul.staff@example.com",
-                displayName = "Rahul (Staff Admin)",
-                isAutoLaunchEnabled = true,
-                registeredAt = System.currentTimeMillis() - 432000000L,
-                lastActiveAt = System.currentTimeMillis() - 3600000L,
-                isSuperAdmin = false,
-                permissions = AdminPermissions(
-                    canAccessPricePage = false,
-                    canManageInventory = true,
-                    canManageKhata = true,
-                    canManageStaff = true,
-                    canSendBroadcast = false,
-                    canExportReports = false
-                )
-            )
-            emit(listOf(superAdmin, staffAdmin))
+                emit(listOf(superAdmin))
+            } else {
+                emit(emptyList())
+            }
         }
         return callbackFlow {
             val listener = db.collection(ADMIN_DEVICES_COLLECTION)

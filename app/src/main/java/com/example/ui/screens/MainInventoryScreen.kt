@@ -52,6 +52,7 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
     val attendanceForSelectedStaff by viewModel.attendanceForSelectedStaff.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -516,7 +517,9 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
         // Onboarding Dialog (Shown only once for normal users when not in admin mode)
         if (!uiState.isOnboarded && !uiState.isAdminMode) {
             UserOnboardingDialog(
-                onNameSubmitted = { name -> viewModel.setUserProfile(name) }
+                onNameSubmitted = { name -> viewModel.setUserProfile(name) },
+                onGoogleSignIn = { viewModel.signInUserWithGoogle(context) },
+                isGoogleLoading = uiState.isGoogleAuthLoading
             )
         }
 
@@ -524,7 +527,9 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
         if (uiState.isAdminGatewayOpen) {
             AdminGatewayDialog(
                 onDismiss = { viewModel.setAdminGatewayOpen(false) },
-                onValidatePin = { pin -> viewModel.validateAdminPin(pin) }
+                onValidatePin = { pin -> viewModel.validateAdminPin(pin) },
+                onGoogleSignIn = { viewModel.signInUserWithGoogle(context) },
+                isGoogleLoading = uiState.isGoogleAuthLoading
             )
         }
 

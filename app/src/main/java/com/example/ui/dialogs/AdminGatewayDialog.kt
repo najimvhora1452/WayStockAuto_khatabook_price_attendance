@@ -37,7 +37,9 @@ import kotlinx.coroutines.delay
 @Composable
 fun AdminGatewayDialog(
     onDismiss: () -> Unit,
-    onValidatePin: (String) -> Boolean
+    onValidatePin: (String) -> Boolean,
+    onGoogleSignIn: () -> Unit = {},
+    isGoogleLoading: Boolean = false
 ) {
     var pinInput by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
@@ -52,6 +54,13 @@ fun AdminGatewayDialog(
             focusRequester.requestFocus()
             keyboardController?.show()
         } catch (_: Exception) {}
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
     }
 
     val submitPin: () -> Unit = {
@@ -107,7 +116,7 @@ fun AdminGatewayDialog(
                 )
 
                 Text(
-                    text = "Enter Master Security PIN",
+                    text = "Enter Master Security PIN or Sign In with Google",
                     fontSize = 13.sp,
                     color = WayStockTextSec,
                     textAlign = TextAlign.Center,
@@ -141,7 +150,7 @@ fun AdminGatewayDialog(
                         .testTag("gateway_pin_input")
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = submitPin,
@@ -153,6 +162,58 @@ fun AdminGatewayDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
                 ) {
                     Text("ACTIVATE PORTAL ⚡", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = WayStockBorder)
+                    Text("  OR  ", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WayStockTextSec)
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = WayStockBorder)
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onGoogleSignIn()
+                    },
+                    enabled = !isGoogleLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .testTag("gateway_google_btn"),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFFF8FAFC),
+                        contentColor = WayStockDark
+                    )
+                ) {
+                    if (isGoogleLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = WayStockPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Authenticating...", fontSize = 13.sp)
+                    } else {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("G", fontWeight = FontWeight.Black, fontSize = 13.sp, color = Color(0xFF4285F4))
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Sign In as Admin with Google", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                    }
                 }
             }
         }

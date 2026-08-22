@@ -20,9 +20,9 @@ data class AdminDeviceEntity(
 )
 
 data class MasterSecurityConfig(
-    val masterAdminEmail: String = "najimvhora1452@gmail.com",
+    val masterAdminEmail: String = "",
     val masterPin: String = "1234",
-    val lastModifiedBy: String = "najimvhora1452@gmail.com",
+    val lastModifiedBy: String = "",
     val lastModifiedAt: Long = 0L,
     // Global broadcast feature toggles for all Premium users
     val isPricePageGlobalToPremium: Boolean = false,

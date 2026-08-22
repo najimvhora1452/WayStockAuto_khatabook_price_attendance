@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AdminAuthManager
@@ -26,7 +27,7 @@ data class WayStockUiState(
     val loggedInAdminName: String? = null,
     val isSuperAdmin: Boolean = false,
     val isAutoLaunchEnabled: Boolean = false,
-    val masterPinLastModifiedBy: String = "najimvhora1452@gmail.com",
+    val masterPinLastModifiedBy: String = "",
     val masterPinLastModifiedAt: Long = 0L,
     val isGoogleAuthLoading: Boolean = false,
     val broadcastMessage: String = "",
@@ -262,6 +263,49 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
             if (isSuper) "👑 Welcome Super Administrator!" else "✅ Logged in as ${displayName}",
             "success"
         )
+    }
+
+    fun signInUserWithGoogle(activityContext: Context) {
+        viewModelScope.launch {
+            setGoogleAuthLoading(true)
+            val result = adminAuthManager.signInWithGoogle(activityContext)
+            setGoogleAuthLoading(false)
+            if (result.isSuccess) {
+                val (email, displayName) = result.getOrNull() ?: Pair("", "")
+                val isSuper = adminAuthManager.isSuperAdmin(email)
+                if (isSuper) {
+                    _uiState.update {
+                        it.copy(
+                            userName = displayName,
+                            userId = "USER_${email.replace("@", "_").replace(".", "_")}",
+                            isOnboarded = true,
+                            isAdminMode = true,
+                            loggedInAdminEmail = email,
+                            loggedInAdminName = displayName,
+                            isSuperAdmin = true
+                        )
+                    }
+                    adminAuthManager.setLocalUserProfile(displayName, "USER_${email.replace("@", "_").replace(".", "_")}")
+                    showAlert("👑 Welcome Super Administrator ($displayName)!", "success")
+                } else {
+                    val uid = "USER_${email.replace("@", "_").replace(".", "_")}"
+                    adminAuthManager.setLocalUserProfile(displayName, uid)
+                    _uiState.update {
+                        it.copy(
+                            userName = displayName,
+                            userId = uid,
+                            isOnboarded = true,
+                            loggedInAdminEmail = email,
+                            loggedInAdminName = displayName
+                        )
+                    }
+                    showAlert("Welcome, $displayName! 🚀", "success")
+                }
+            } else {
+                val err = result.exceptionOrNull()?.message ?: "Google Sign-In failed"
+                showAlert(err, "error")
+            }
+        }
     }
 
     fun setGoogleAuthLoading(loading: Boolean) {
@@ -1741,7 +1785,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
 
     fun updateDevicePermissions(targetEmail: String, permissions: com.example.data.AdminPermissions) {
         viewModelScope.launch {
-            val operator = _uiState.value.loggedInAdminEmail ?: AdminAuthManager.SUPER_ADMIN_EMAIL
+            val operator = _uiState.value.loggedInAdminEmail ?: adminAuthManager.getLocalMasterAdminEmail()
             val result = adminAuthManager.updateAdminPermissions(
                 operatorEmail = operator,
                 targetEmail = targetEmail,
@@ -1762,7 +1806,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
         isInventoryGlobal: Boolean
     ) {
         viewModelScope.launch {
-            val operator = _uiState.value.loggedInAdminEmail ?: AdminAuthManager.SUPER_ADMIN_EMAIL
+            val operator = _uiState.value.loggedInAdminEmail ?: adminAuthManager.getLocalMasterAdminEmail()
             val result = adminAuthManager.updateGlobalFeatureConfig(
                 operatorEmail = operator,
                 isPriceGlobal = isPriceGlobal,

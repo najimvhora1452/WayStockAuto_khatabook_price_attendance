@@ -31,7 +31,9 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun UserOnboardingDialog(
-    onNameSubmitted: (String) -> Unit
+    onNameSubmitted: (String) -> Unit,
+    onGoogleSignIn: () -> Unit = {},
+    isGoogleLoading: Boolean = false
 ) {
     var nameInput by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
@@ -46,8 +48,11 @@ fun UserOnboardingDialog(
         } catch (_: Exception) {}
     }
 
-    val emojiAvatar = remember(nameInput) {
-        if (nameInput.trim().isEmpty()) "👋" else "🤩"
+    DisposableEffect(Unit) {
+        onDispose {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
     }
 
     val submitName: () -> Unit = {
@@ -90,17 +95,77 @@ fun UserOnboardingDialog(
                 )
 
                 Text(
-                    text = "Enter your name to get started",
+                    text = "Sign in with Google or enter your name",
                     fontSize = 13.sp,
                     color = WayStockTextSec,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+                    modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
                 )
+
+                // Google One-Tap Sign-In Button
+                OutlinedButton(
+                    onClick = onGoogleSignIn,
+                    enabled = !isGoogleLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("google_signin_btn"),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFFF8FAFC),
+                        contentColor = WayStockDark
+                    )
+                ) {
+                    if (isGoogleLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = WayStockPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Signing in...", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    } else {
+                        // Google "G" Icon representation
+                        Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    "G",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF4285F4)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Continue with Google", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = WayStockBorder)
+                    Text(
+                        "  OR  ",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WayStockTextSec
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = WayStockBorder)
+                }
 
                 OutlinedTextField(
                     value = nameInput,
                     onValueChange = { nameInput = it },
-                    placeholder = { Text("Enter your name...", color = WayStockTextSec) },
+                    placeholder = { Text("Enter your name manually...", color = WayStockTextSec, fontSize = 13.sp) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { submitName() }),
@@ -119,18 +184,19 @@ fun UserOnboardingDialog(
                         .testTag("user_name_input")
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = submitName,
+                    enabled = nameInput.trim().length >= 2,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(46.dp)
                         .testTag("user_submit_btn"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary)
                 ) {
-                    Text("Let's Go 🚀", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Let's Go 🚀", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
