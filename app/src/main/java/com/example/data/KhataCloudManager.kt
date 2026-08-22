@@ -21,9 +21,7 @@ class KhataCloudManager(private val context: Context, private val repository: Wa
     }
 
     private val scope = CoroutineScope(Dispatchers.IO)
-    private var customersListener: ListenerRegistration? = null
-    private var transactionsListener: ListenerRegistration? = null
-    private var memosListener: ListenerRegistration? = null
+    private val activeListeners = mutableListOf<ListenerRegistration>()
 
     private fun getFirestore(): FirebaseFirestore? {
         return try {
@@ -37,6 +35,44 @@ class KhataCloudManager(private val context: Context, private val repository: Wa
         }
     }
 
+    private fun getDoubleField(doc: com.google.firebase.firestore.DocumentSnapshot, vararg keys: String): Double {
+        for (k in keys) {
+            val v = doc.get(k)
+            if (v != null) {
+                return when (v) {
+                    is Number -> v.toDouble()
+                    is String -> v.toDoubleOrNull() ?: 0.0
+                    else -> 0.0
+                }
+            }
+        }
+        return 0.0
+    }
+
+    private fun getStringField(doc: com.google.firebase.firestore.DocumentSnapshot, vararg keys: String): String {
+        for (k in keys) {
+            val v = doc.get(k)
+            if (v != null) {
+                return v.toString().trim()
+            }
+        }
+        return ""
+    }
+
+    private fun getLongField(doc: com.google.firebase.firestore.DocumentSnapshot, vararg keys: String): Long {
+        for (k in keys) {
+            val v = doc.get(k)
+            if (v != null) {
+                return when (v) {
+                    is Number -> v.toLong()
+                    is String -> v.toLongOrNull() ?: 0L
+                    else -> 0L
+                }
+            }
+        }
+        return 0L
+    }
+
     /**
      * Start real-time sync with Firebase Firestore
      */
@@ -44,109 +80,137 @@ class KhataCloudManager(private val context: Context, private val repository: Wa
         val firestore = getFirestore() ?: return
 
         try {
-            // 1. Listen for Customer updates from Cloud
-            customersListener?.remove()
-            customersListener = firestore.collection(KHATA_CUSTOMERS_COLLECTION)
-                .addSnapshotListener { snapshots, error ->
-                    if (error != null) {
-                        Log.w(TAG, "Customers listener error: ${error.message}")
-                        return@addSnapshotListener
-                    }
-                    if (snapshots != null) {
-                        scope.launch {
-                            for (doc in snapshots.documents) {
-                                val id = doc.getString("id") ?: doc.id
-                                val name = doc.getString("name") ?: continue
-                                val phone = doc.getString("phone") ?: ""
-                                val address = doc.getString("address") ?: ""
-                                val type = doc.getString("customerType") ?: "Customer"
-                                val balance = doc.getDouble("balance") ?: 0.0
-                                val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                                val updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+            stopSync()
 
-                                val customer = KhataCustomerEntity(
-                                    id = id,
-                                    name = name,
-                                    phone = phone,
-                                    address = address,
-                                    customerType = type,
-                                    balance = balance,
-                                    createdAt = createdAt,
-                                    updatedAt = updatedAt
-                                )
-                                repository.insertOrUpdateKhataCustomer(customer)
+            // 1. Listen for Customer updates from Cloud (checks khata_customers, customers, parties)
+            val customerCollections = listOf("khata_customers", "customers", "parties")
+            for (colName in customerCollections) {
+                val listener = firestore.collection(colName)
+                    .addSnapshotListener { snapshots, error ->
+                        if (error != null) {
+                            Log.d(TAG, "Customer collection $colName listener notice: ${error.message}")
+                            return@addSnapshotListener
+                        }
+                        if (snapshots != null && !snapshots.isEmpty) {
+                            scope.launch {
+                                for (doc in snapshots.documents) {
+                                    val id = doc.getString("id") ?: doc.id
+                                    val name = getStringField(doc, "name", "customerName", "partyName", "cname", "title")
+                                    if (name.isBlank()) continue
+
+                                    val phone = getStringField(doc, "phone", "mobile", "contact", "phoneNumber", "tel")
+                                    val address = getStringField(doc, "address", "addr", "city", "location")
+                                    var type = getStringField(doc, "customerType", "type", "partyType")
+                                    if (type.isBlank()) type = "Customer"
+                                    val balance = getDoubleField(doc, "balance", "totalBalance", "dueAmount", "pendingAmount")
+                                    val createdAt = getLongField(doc, "createdAt", "created_at", "timestamp").let {
+                                        if (it > 0) it else System.currentTimeMillis()
+                                    }
+                                    val updatedAt = getLongField(doc, "updatedAt", "updated_at").let {
+                                        if (it > 0) it else System.currentTimeMillis()
+                                    }
+
+                                    val customer = KhataCustomerEntity(
+                                        id = id,
+                                        name = name,
+                                        phone = phone,
+                                        address = address,
+                                        customerType = type,
+                                        balance = balance,
+                                        createdAt = createdAt,
+                                        updatedAt = updatedAt
+                                    )
+                                    repository.insertOrUpdateKhataCustomer(customer)
+                                }
                             }
                         }
                     }
-                }
+                activeListeners.add(listener)
+            }
 
-            // 2. Listen for Transactions updates from Cloud
-            transactionsListener?.remove()
-            transactionsListener = firestore.collection(KHATA_TRANSACTIONS_COLLECTION)
-                .addSnapshotListener { snapshots, error ->
-                    if (error != null) {
-                        Log.w(TAG, "Transactions listener error: ${error.message}")
-                        return@addSnapshotListener
-                    }
-                    if (snapshots != null) {
-                        scope.launch {
-                            for (doc in snapshots.documents) {
-                                val id = doc.getString("id") ?: doc.id
-                                val customerId = doc.getString("customerId") ?: continue
-                                val customerName = doc.getString("customerName") ?: ""
-                                val amount = doc.getDouble("amount") ?: 0.0
-                                val type = doc.getString("type") ?: "GAVE"
-                                val date = doc.getString("date") ?: ""
-                                val time = doc.getString("time") ?: ""
-                                val note = doc.getString("note") ?: ""
-                                val paymentMode = doc.getString("paymentMode") ?: "Cash"
-                                val billNumber = doc.getString("billNumber") ?: ""
-                                val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+            // 2. Listen for Transactions updates from Cloud (checks khata_transactions, transactions)
+            val txnCollections = listOf("khata_transactions", "transactions")
+            for (colName in txnCollections) {
+                val listener = firestore.collection(colName)
+                    .addSnapshotListener { snapshots, error ->
+                        if (error != null) {
+                            Log.d(TAG, "Txn collection $colName listener notice: ${error.message}")
+                            return@addSnapshotListener
+                        }
+                        if (snapshots != null && !snapshots.isEmpty) {
+                            scope.launch {
+                                for (doc in snapshots.documents) {
+                                    val id = doc.getString("id") ?: doc.id
+                                    val customerId = getStringField(doc, "customerId", "customer_id", "partyId", "party_id")
+                                    if (customerId.isBlank()) continue
 
-                                val txn = KhataTransactionEntity(
-                                    id = id,
-                                    customerId = customerId,
-                                    customerName = customerName,
-                                    amount = amount,
-                                    type = type,
-                                    date = date,
-                                    time = time,
-                                    note = note,
-                                    paymentMode = paymentMode,
-                                    billNumber = billNumber,
-                                    timestamp = timestamp
-                                )
-                                repository.insertOrUpdateKhataTransactionDirect(txn)
+                                    val customerName = getStringField(doc, "customerName", "partyName", "name")
+                                    val amount = getDoubleField(doc, "amount", "amt", "price", "total")
+                                    var type = getStringField(doc, "type", "txnType", "transactionType", "dr_cr").uppercase()
+                                    if (type != "GAVE" && type != "GOT") {
+                                        type = if (type.contains("GAVE") || type.contains("DEBIT") || type.contains("DR")) "GAVE" else "GOT"
+                                    }
+                                    val date = getStringField(doc, "date", "txnDate")
+                                    val time = getStringField(doc, "time", "txnTime")
+                                    val note = getStringField(doc, "note", "description", "remark", "notes", "memo")
+                                    val paymentMode = getStringField(doc, "paymentMode", "payment_mode", "mode", "method").ifBlank { "Cash" }
+                                    val billNumber = getStringField(doc, "billNumber", "bill_no", "invoiceNo", "billNo")
+                                    val timestamp = getLongField(doc, "timestamp", "createdAt", "time_millis").let {
+                                        if (it > 0) it else System.currentTimeMillis()
+                                    }
+
+                                    val txn = KhataTransactionEntity(
+                                        id = id,
+                                        customerId = customerId,
+                                        customerName = customerName,
+                                        amount = amount,
+                                        type = type,
+                                        date = date,
+                                        time = time,
+                                        note = note,
+                                        paymentMode = paymentMode,
+                                        billNumber = billNumber,
+                                        timestamp = timestamp
+                                    )
+                                    repository.insertOrUpdateKhataTransactionDirect(txn)
+                                }
                             }
                         }
                     }
-                }
+                activeListeners.add(listener)
+            }
 
-            // 3. Listen for Memos updates from Cloud
-            memosListener?.remove()
-            memosListener = firestore.collection(KHATA_MEMOS_COLLECTION)
-                .addSnapshotListener { snapshots, error ->
-                    if (error != null) {
-                        Log.w(TAG, "Memos listener error: ${error.message}")
-                        return@addSnapshotListener
-                    }
-                    if (snapshots != null) {
-                        scope.launch {
-                            for (doc in snapshots.documents) {
-                                val note = doc.getString("note") ?: continue
-                                val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
-                                val id = doc.getLong("id") ?: doc.id.toLongOrNull() ?: 0L
+            // 3. Listen for Memos updates from Cloud (checks khata_memos, memos, notes)
+            val memoCollections = listOf("khata_memos", "memos", "notes")
+            for (colName in memoCollections) {
+                val listener = firestore.collection(colName)
+                    .addSnapshotListener { snapshots, error ->
+                        if (error != null) {
+                            Log.d(TAG, "Memos collection $colName listener notice: ${error.message}")
+                            return@addSnapshotListener
+                        }
+                        if (snapshots != null && !snapshots.isEmpty) {
+                            scope.launch {
+                                for (doc in snapshots.documents) {
+                                    val note = getStringField(doc, "note", "text", "memo", "content")
+                                    if (note.isBlank()) continue
+                                    val timestamp = getLongField(doc, "timestamp", "time", "createdAt").let {
+                                        if (it > 0) it else System.currentTimeMillis()
+                                    }
+                                    val id = doc.getLong("id") ?: doc.id.toLongOrNull() ?: 0L
 
-                                val memo = KhataMemoEntity(
-                                    id = id,
-                                    note = note,
-                                    timestamp = timestamp
-                                )
-                                repository.insertKhataMemoDirect(memo)
+                                    val memo = KhataMemoEntity(
+                                        id = id,
+                                        note = note,
+                                        timestamp = timestamp
+                                    )
+                                    repository.insertKhataMemoDirect(memo)
+                                }
                             }
                         }
                     }
-                }
+                activeListeners.add(listener)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error starting Firestore sync: ${e.message}")
         }
@@ -277,8 +341,13 @@ class KhataCloudManager(private val context: Context, private val repository: Wa
     }
 
     fun stopSync() {
-        customersListener?.remove()
-        transactionsListener?.remove()
-        memosListener?.remove()
+        for (l in activeListeners) {
+            try {
+                l.remove()
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+        activeListeners.clear()
     }
 }

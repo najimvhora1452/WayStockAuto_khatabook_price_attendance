@@ -26,7 +26,13 @@ class WayStockRepository(context: Context) {
         // Clean initial state for user's fresh custom data
     }
 
+    suspend fun getAllInventoryList(): List<InventoryItemEntity> = dao.getAllInventoryList()
+
     suspend fun insertOrUpdateItem(item: InventoryItemEntity) = dao.insertOrUpdateItem(item)
+
+    suspend fun insertAllItems(items: List<InventoryItemEntity>) = dao.insertAllItems(items)
+
+    suspend fun replaceAllInventory(items: List<InventoryItemEntity>) = dao.replaceAllInventory(items)
 
     suspend fun deleteItemAndChildren(key: String) = dao.deleteItemAndChildren(key)
 

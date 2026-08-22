@@ -588,7 +588,9 @@ fun MainInventoryScreen(viewModel: WayStockViewModel) {
                 onLogoutAdmin = { viewModel.logoutAdmin() },
                 onDeleteRequestedItem = { id -> viewModel.deleteRequestedItem(id) },
                 onClearAllRequestedItems = { viewModel.clearAllRequestedItems() },
-                onAddRequestedToInventory = { structureStr -> viewModel.openAddModalWithRequestedItems(structureStr) }
+                onAddRequestedToInventory = { structureStr -> viewModel.openAddModalWithRequestedItems(structureStr) },
+                onSyncWithCloud = { viewModel.syncWithCloudNow() },
+                onPushToCloud = { viewModel.pushAllInventoryToCloudNow() }
             )
         }
 

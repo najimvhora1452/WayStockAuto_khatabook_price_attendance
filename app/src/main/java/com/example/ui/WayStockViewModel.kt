@@ -69,6 +69,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
     private val repository = WayStockRepository(application)
     val adminAuthManager = AdminAuthManager(application)
     val khataCloudManager = com.example.data.KhataCloudManager(application, repository)
+    val stockCloudManager = com.example.data.StockCloudManager(application, repository)
 
     private val _uiState = MutableStateFlow(WayStockUiState())
     val uiState: StateFlow<WayStockUiState> = _uiState.asStateFlow()
@@ -142,6 +143,34 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
             repository.seedDefaultKhataIfEmpty()
             syncFolderAndItemTypes()
             khataCloudManager.startRealtimeSync()
+            
+            stockCloudManager.setOnInventoryUpdatedCallback {
+                viewModelScope.launch {
+                    syncFolderAndItemTypes()
+                }
+            }
+            stockCloudManager.startRealtimeSync()
+        }
+
+        // Listen for Global Broadcasts from Cloud
+        viewModelScope.launch {
+            stockCloudManager.latestBroadcast.collect { pair ->
+                if (pair != null) {
+                    val (msg, _) = pair
+                    val clientName = _uiState.value.userName.ifBlank { "Customer" }
+                    val personalized = msg.replace("@user", clientName, ignoreCase = true)
+                    _uiState.update { it.copy(broadcastMessage = personalized) }
+                }
+            }
+        }
+
+        // Listen for Cloud Admin Password updates
+        viewModelScope.launch {
+            stockCloudManager.cloudAdminPassword.collect { pass ->
+                if (!pass.isNullOrBlank()) {
+                    _uiState.update { it.copy(adminPin = pass) }
+                }
+            }
         }
 
         // Restore local user profile if already onboarded
@@ -525,6 +554,7 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val existing = repository.getItemByKey(itemKey) ?: return@launch
             repository.insertOrUpdateItem(existing.copy(toggleOn = isChecked))
+            stockCloudManager.scheduleSyncToFirebase()
         }
     }
 
@@ -541,7 +571,8 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 if (item != null) {
                     val formattedName = text.split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
                     repository.insertOrUpdateItem(item.copy(name = formattedName, displayName = formattedName))
-                    showAlert("Name updated! ✅", "success")
+                    stockCloudManager.scheduleSyncToFirebase()
+                    showAlert("Name updated & synced to Cloud! ✅", "success")
                 }
                 _uiState.update { it.copy(isAddModalOpen = false, editTargetKey = null, addModalTargetFolder = null) }
                 clearCardSelection()
@@ -603,13 +634,14 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 }
             }
             syncFolderAndItemTypes()
+            stockCloudManager.scheduleSyncToFirebase()
 
             // If this structure was built from User Requested Items, auto-clear the requested pool
             if (state.isAddingRequestedItems) {
                 repository.clearAllRequestedItems()
             }
 
-            showAlert("Structure updated successfully! 🚀", "success")
+            showAlert("Structure updated & syncing to Cloud! 🚀", "success")
             _uiState.update { it.copy(isAddModalOpen = false, addModalTargetFolder = null, addModalInitialText = "", isAddingRequestedItems = false) }
         }
     }
@@ -651,7 +683,8 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                 repository.deleteCartItemsByKeys(key, rootFolder = key, userId = userId)
             }
             syncFolderAndItemTypes()
-            showAlert("Selected items deleted! 🗑️", "success")
+            stockCloudManager.scheduleSyncToFirebase()
+            showAlert("Selected items deleted & synced to Cloud! 🗑️", "success")
             clearCardSelection()
         }
     }
@@ -674,7 +707,8 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
             }
-            showAlert("Unit '$formatted' added to category tree! ✅", "success")
+            stockCloudManager.scheduleSyncToFirebase()
+            showAlert("Unit '$formatted' added & synced to Cloud! ✅", "success")
         }
     }
 
@@ -691,7 +725,28 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
                     repository.insertOrUpdateItem(item.copy(allowedUnitsCsv = newCsv, currentUnit = newUnit))
                 }
             }
+            stockCloudManager.scheduleSyncToFirebase()
             showAlert("Unit '$unitToDelete' deleted 🗑️", "info")
+        }
+    }
+
+    fun syncWithCloudNow() {
+        viewModelScope.launch {
+            showAlert("Syncing inventory with Cloud... ⏳", "info")
+            stockCloudManager.pullFullInventoryFromCloud()
+            showAlert("Cloud inventory sync complete! ✅", "success")
+        }
+    }
+
+    fun pushAllInventoryToCloudNow() {
+        viewModelScope.launch {
+            showAlert("Pushing all inventory to Cloud... ⏳", "info")
+            val success = stockCloudManager.syncToFirebaseImmediate()
+            if (success) {
+                showAlert("All inventory pushed to Cloud successfully! ☁️", "success")
+            } else {
+                showAlert("Failed to push inventory to Cloud", "error")
+            }
         }
     }
 
@@ -736,7 +791,8 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             val result = adminAuthManager.updateMasterPin(loggedInEmail, newPin)
-            if (result.isSuccess) {
+            val cloudRes = stockCloudManager.updateCloudAdminPassword(newPin)
+            if (result.isSuccess || cloudRes.isSuccess) {
                 _uiState.update { it.copy(adminPin = newPin, isAdminSettingsOpen = false) }
                 showAlert("🎉 Master PIN updated to '$newPin' & saved to cloud!", "success")
             } else {
@@ -746,12 +802,20 @@ class WayStockViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun sendBroadcastNotification(message: String) {
-        if (message.trim().isEmpty()) {
+        val msg = message.trim()
+        if (msg.isEmpty()) {
             showAlert("Message cannot be empty!", "error")
             return
         }
-        _uiState.update { it.copy(broadcastMessage = message.trim(), isAdminSettingsOpen = false) }
-        showAlert("Broadcast message sent to all users! 📢", "success")
+        viewModelScope.launch {
+            val cloudRes = stockCloudManager.sendGlobalBroadcast(msg)
+            _uiState.update { it.copy(broadcastMessage = msg, isAdminSettingsOpen = false) }
+            if (cloudRes.isSuccess) {
+                showAlert("Broadcast message sent to Cloud & all users! 📢", "success")
+            } else {
+                showAlert("Broadcast saved locally: $msg", "info")
+            }
+        }
     }
 
     fun logoutAdmin() {

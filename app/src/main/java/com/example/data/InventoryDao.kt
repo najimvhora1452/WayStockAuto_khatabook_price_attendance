@@ -29,6 +29,15 @@ interface InventoryDao {
     @Query("DELETE FROM inventory_items")
     suspend fun clearInventory()
 
+    @Query("SELECT * FROM inventory_items")
+    suspend fun getAllInventoryList(): List<InventoryItemEntity>
+
+    @Transaction
+    suspend fun replaceAllInventory(items: List<InventoryItemEntity>) {
+        clearInventory()
+        insertAllItems(items)
+    }
+
     // Cart Queries
     @Query("SELECT * FROM cart_items WHERE userId = :userId")
     fun getCartItemsFlow(userId: String): Flow<List<CartItemEntity>>

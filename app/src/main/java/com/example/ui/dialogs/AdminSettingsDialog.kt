@@ -71,11 +71,14 @@ fun AdminSettingsDialog(
     onLogoutAdmin: () -> Unit,
     onDeleteRequestedItem: (Long) -> Unit = {},
     onClearAllRequestedItems: () -> Unit = {},
-    onAddRequestedToInventory: (String) -> Unit = {}
+    onAddRequestedToInventory: (String) -> Unit = {},
+    onSyncWithCloud: () -> Unit = {},
+    onPushToCloud: () -> Unit = {}
 ) {
     var isSecurityOpen by remember { mutableStateOf(false) }
     var isAutoLaunchSectionOpen by remember { mutableStateOf(true) }
     var isManageDevicesOpen by remember { mutableStateOf(isSuperAdmin) }
+    var isCloudSyncSectionOpen by remember { mutableStateOf(true) }
     var isBroadcastOpen by remember { mutableStateOf(false) }
     var isStickyControlsSectionOpen by remember { mutableStateOf(false) }
     var isRequestedItemsOpen by remember { mutableStateOf(userRequestedItems.isNotEmpty()) }
@@ -828,7 +831,83 @@ fun AdminSettingsDialog(
                     }
                 }
 
-                // 6. User Requested Items Card
+                // 6. Cloud Inventory Sync Card (Firestore stock & appSettings)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isCloudSyncSectionOpen = !isCloudSyncSectionOpen },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFEFF6FF),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.CloudSync, contentDescription = null, tint = WayStockPrimary, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("☁️ Cloud Inventory Sync", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WayStockDark)
+                                    Text("stockmaster-94534 • Realtime Active", fontSize = 11.sp, color = Color(0xFF10B981), fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                            Icon(
+                                imageVector = if (isCloudSyncSectionOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Toggle Section",
+                                tint = WayStockTextSec
+                            )
+                        }
+
+                        AnimatedVisibility(visible = isCloudSyncSectionOpen) {
+                            Column(modifier = Modifier.padding(top = 14.dp)) {
+                                Text(
+                                    "App auto-syncs inventory on launch and whenever Admin updates items. You can also trigger manual sync below:",
+                                    fontSize = 11.sp,
+                                    color = WayStockTextSec
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(
+                                        onClick = { onSyncWithCloud() },
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = WayStockPrimary),
+                                        modifier = Modifier.weight(1f).height(42.dp)
+                                    ) {
+                                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Pull Cloud", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = { onPushToCloud() },
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, WayStockPrimary),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = WayStockPrimary),
+                                        modifier = Modifier.weight(1f).height(42.dp)
+                                    ) {
+                                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Push Cloud", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 7. User Requested Items Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
